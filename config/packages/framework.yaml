@@ -8,8 +8,31 @@ framework:
     #esi: true
     #fragments: true
 
+    rate_limiter:
+        # Mot de passe oublié : 3 codes par quart d'heure pour un même identifiant (et une même IP)...
+        demande_code:
+            policy: sliding_window
+            limit: 3
+            interval: '15 minutes'
+        # ... et 20 essais de code par quart d'heure depuis une même IP (tous comptes confondus).
+        verification_code:
+            policy: sliding_window
+            limit: 20
+            interval: '15 minutes'
+
+    http_client:
+        scoped_clients:
+            # Service d'envoi des notifications push d'Expo (injecté sous le nom $expoClient).
+            expo.client:
+                base_uri: 'https://exp.host'
+                headers:
+                    Accept: 'application/json'
+
 when@test:
     framework:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        # En test, aucune requête ne part vers Expo : un faux serveur répond et garde les envois.
+        http_client:
+            mock_response_factory: App\Tests\ServeurExpoSimule

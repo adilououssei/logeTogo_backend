@@ -11,6 +11,16 @@ enum StatutAnnonce: string
     case SUSPENDU = 'suspendu';
 
     /** Seules ces annonces sont visibles dans les listes publiques. */
+    public function libelle(): string
+    {
+        return match ($this) {
+            self::DISPONIBLE => 'Disponible',
+            self::OCCUPE => 'Occupé',
+            self::VENDU => 'Vendu',
+            self::SUSPENDU => 'Suspendu',
+        };
+    }
+
     public function estVisible(): bool
     {
         return self::SUSPENDU !== $this;

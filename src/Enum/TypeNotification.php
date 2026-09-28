@@ -8,4 +8,5 @@ enum TypeNotification: string
     case MESSAGE = 'message';
     case MISE_A_JOUR_STATUT = 'mise_a_jour_statut';
     case AVIS = 'avis';
+    case VERIFICATION = 'verification';
 }

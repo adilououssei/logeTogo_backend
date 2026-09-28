@@ -1,0 +1,14 @@
+# Session longue durée de l'application mobile :
+# - le jeton d'accès (JWT) dure 1 heure (lexik_jwt_authentication.token_ttl) ;
+# - le jeton de renouvellement permet d'en obtenir un nouveau sans mot de passe
+#   (POST /api/auth/renouveler). Il est remplacé à chaque usage et sa durée repart
+#   pour 1 an : un utilisateur qui ouvre l'appli au moins une fois par an reste connecté
+#   jusqu'à ce qu'il se déconnecte.
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\JetonRenouvellement
+    ttl: 31536000
+    single_use: true
+    single_use_ttl_update: true
+    # Seule l'empreinte est stockée : une copie de la base ne permet pas de se connecter.
+    hash_tokens:
+        enabled: true

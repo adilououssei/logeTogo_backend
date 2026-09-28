@@ -1,0 +1,45 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Recherche{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Recherche</h1>
+        <p>{% if q|length < 2 %}Saisissez au moins 2 caractères.{% else %}Résultats pour « {{ q }} » : {{ utilisateurs|length }} utilisateur(s), {{ annonces|length }} bien(s).{% endif %}</p>
+    </div>
+</div>
+
+{% if q|length >= 2 %}
+<div class="grille grille--deux">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="users"></i>Utilisateurs et agents</h2></div>
+        <div class="tableau-conteneur" style="padding-top:10px">
+            <table class="tableau"><tbody>
+            {% for u in utilisateurs %}
+                <tr><td>{{ m.personne(u) }}</td><td>{{ m.role(u.role) }}</td><td>{{ m.etat_compte(u) }}</td></tr>
+            {% else %}
+                <tr><td class="vide">Aucun utilisateur.</td></tr>
+            {% endfor %}
+            </tbody></table>
+        </div>
+    </section>
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="building-2"></i>Biens</h2></div>
+        <div class="tableau-conteneur" style="padding-top:10px">
+            <table class="tableau"><tbody>
+            {% for a in annonces %}
+                <tr>
+                    <td><a href="{{ path('admin_bien', {id: a.id}) }}" style="font-weight:500">{{ a.titre }}</a><br><span class="texte-gris texte-petit">{{ a.localisation.quartier }}, {{ a.localisation.ville }} · {{ a.publiePar.nomComplet }}</span></td>
+                    <td>{{ m.statut_annonce(a.statut) }}</td>
+                </tr>
+            {% else %}
+                <tr><td class="vide">Aucun bien.</td></tr>
+            {% endfor %}
+            </tbody></table>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

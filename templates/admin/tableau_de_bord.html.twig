@@ -1,0 +1,188 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Tableau de bord{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Bonjour {{ app.user.prenom }} <i data-lucide="hand"></i></h1>
+        <p>Voici un aperçu de l'activité de votre plateforme LogeTogo.</p>
+    </div>
+    <div class="date-du-jour">
+        <i data-lucide="calendar"></i>
+        <span><strong>{{ 'now'|format_date('full', locale='fr')|capitalize }}</strong>{{ 'now'|date('H:i', 'Africa/Lome') }}</span>
+    </div>
+</div>
+
+{# ─── Indicateurs ─── #}
+<div class="grille grille--indicateurs">
+    {{ m.indicateur('user', 'fond-bleu', 'Clients', indicateurs.clients.total, indicateurs.clients.ceMois, path('admin_utilisateurs', {role: 'locataire'})) }}
+    {{ m.indicateur('user-round', 'fond-marron', 'Agents immobiliers', indicateurs.agents.total, indicateurs.agents.ceMois, path('admin_agents')) }}
+    {{ m.indicateur('house', 'fond-jaune', 'Biens publiés', indicateurs.biens.total, indicateurs.biens.ceMois, path('admin_biens')) }}
+    {{ m.indicateur('shield-alert', 'fond-bleu', 'À traiter', indicateurs.aTraiter.total, indicateurs.aTraiter.ceMois, path(admin_a_traiter().signalements > 0 ? 'admin_signalements' : 'admin_verifications')) }}
+</div>
+
+{# ─── Graphiques et activité ─── #}
+<div class="grille grille--graphiques">
+    <section class="carte">
+        <div class="carte__entete">
+            <h2><i data-lucide="house"></i>Évolution des biens publiés</h2>
+            <div class="legende">
+                <span><i style="background:#1d6fe8"></i>Location</span>
+                <span><i style="background:#f5b400"></i>Vente</span>
+            </div>
+        </div>
+        <div class="carte__corps">
+            <div class="zone-graphique">
+                <canvas data-graphique="{{ {type: 'ligne', libelles: evolution.mois, series: [
+                    {nom: 'Location', couleur: 'bleu', valeurs: evolution.location},
+                    {nom: 'Vente', couleur: 'jaune', valeurs: evolution.vente},
+                ]}|json_encode }}"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="chart-pie"></i>Répartition des biens</h2></div>
+        {% if repartition is empty %}
+            <div class="vide"><i data-lucide="chart-pie"></i>Aucun bien publié pour le moment.</div>
+        {% else %}
+            {% set palette = ['bleu', 'jaune', 'marron', 'bleuClair', 'gris', 'vert', '#c9d0dd'] %}
+            {% set hex = {bleu: '#1d6fe8', jaune: '#f5b400', marron: '#8b3a0f', bleuClair: '#3faef0', gris: '#9aa3b5', vert: '#1e9e4a', '#c9d0dd': '#c9d0dd'} %}
+            <div class="repartition">
+                <div class="repartition__anneau">
+                    <canvas data-graphique="{{ {type: 'anneau', libelles: repartition|column('libelle'), valeurs: repartition|column('nombre'), couleurs: palette|slice(0, repartition|length)}|json_encode }}"></canvas>
+                    <div class="repartition__centre"><strong>{{ indicateurs.biens.total }}</strong><span>biens</span></div>
+                </div>
+                <ul class="repartition__liste">
+                    {% for r in repartition %}
+                        <li><span class="repartition__puce" style="background: {{ hex[palette[loop.index0]] }}"></span>{{ r.libelle }}<strong>{{ r.pourcentage }} %</strong></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </section>
+
+    <div class="pile">
+        {% if indicateurs.aTraiter.total == 0 %}
+            <div class="encadre-etat">
+                <i data-lucide="lightbulb"></i>
+                <div><strong>Tout est sous contrôle !</strong><p>Aucun signalement ni vérification en attente.</p></div>
+            </div>
+        {% else %}
+            <a class="encadre-etat encadre-etat--alerte" href="{{ path(admin_a_traiter().signalements > 0 ? 'admin_signalements' : 'admin_verifications') }}" style="color: inherit; text-decoration: none">
+                <i data-lucide="triangle-alert"></i>
+                <div><strong>{{ indicateurs.aTraiter.total }} élément{{ indicateurs.aTraiter.total > 1 ? 's' }} à traiter</strong>
+                    <p>{{ admin_a_traiter().signalements }} signalement(s), {{ admin_a_traiter().verifications }} vérification(s) d'identité.</p></div>
+            </a>
+        {% endif %}
+
+        <section class="carte">
+            <div class="carte__entete"><h2><i data-lucide="clock"></i>Activité récente</h2></div>
+            {% if activite is empty %}
+                <div class="vide">Aucune activité pour le moment.</div>
+            {% else %}
+                {% set styles = {
+                    inscription: {icone: 'user-plus', fond: 'var(--bleu-pale)', couleur: 'var(--bleu)'},
+                    annonce: {icone: 'house-plus', fond: 'var(--vert-pale)', couleur: 'var(--vert)'},
+                    signalement: {icone: 'flag', fond: 'var(--rouge-pale)', couleur: 'var(--rouge)'},
+                    verification: {icone: 'id-card', fond: 'var(--jaune-pale)', couleur: '#b07a00'},
+                    avis: {icone: 'star', fond: 'var(--marron-pale)', couleur: 'var(--marron)'},
+                } %}
+                <ul class="activite">
+                    {% for e in activite %}
+                        {% set st = styles[e.type] %}
+                        <li>
+                            <span class="activite__icone" style="background: {{ st.fond }}; color: {{ st.couleur }}"><i data-lucide="{{ st.icone }}"></i></span>
+                            <span>
+                                {% if e.lien %}<a href="{{ path(e.lien.route, e.lien.parametres) }}">{% endif %}
+                                <div class="activite__titre">{{ e.titre }}</div>
+                                <div class="activite__detail">{{ e.detail }}</div>
+                                {% if e.lien %}</a>{% endif %}
+                            </span>
+                            <span class="activite__quand">{{ e.date|il_y_a|capitalize }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="carte__corps" style="text-align: right; padding-top: 6px">
+                <a class="texte-petit" href="{{ path('admin_rapports') }}">Voir les rapports <i data-lucide="arrow-right" style="width:13px;height:13px;vertical-align:-2px"></i></a>
+            </div>
+        </section>
+    </div>
+</div>
+
+{# ─── Derniers biens, annonceurs, actions ─── #}
+<div class="grille grille--bas">
+    <section class="carte">
+        <div class="carte__entete">
+            <h2><i data-lucide="house"></i>Derniers biens publiés</h2>
+            <a class="lien-voir" href="{{ path('admin_biens') }}">Voir tout <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="carte__corps">
+            {% for a in derniersBiens %}
+                {% set photo = photo_principale(a) %}
+                <a class="bien-ligne" href="{{ path('admin_bien', {id: a.id}) }}" style="color: inherit; text-decoration: none">
+                    {% if photo %}<img class="bien-ligne__photo" src="{{ photo }}" alt="">{% else %}<span class="bien-ligne__photo"><i data-lucide="image"></i></span>{% endif %}
+                    <span class="bien-ligne__corps">
+                        <span class="bien-ligne__haut">
+                            <span class="bien-ligne__titre">{{ a.titre }}</span>
+                            {{ m.transaction(a.typeTransaction) }}
+                        </span>
+                        <div class="bien-ligne__lieu">{{ a.localisation.ville }}{% if a.localisation.quartier != a.localisation.ville %} – {{ a.localisation.quartier }}{% endif %}</div>
+                        <span class="bien-ligne__bas">
+                            <span class="bien-ligne__caracs">
+                                {% if a.chambres > 0 %}<span><i data-lucide="bed-double"></i>{{ a.chambres }} ch</span>{% endif %}
+                                {% if a.sallesDeBain > 0 %}<span><i data-lucide="bath"></i>{{ a.sallesDeBain }} sdb</span>{% endif %}
+                                {% if a.superficie %}<span><i data-lucide="ruler"></i>{{ a.superficie }} m²</span>{% endif %}
+                            </span>
+                            <span class="bien-ligne__prix">{{ a.prix|fcfa }}{{ a.typeTransaction.value == 'location' ? '/mois' }}</span>
+                        </span>
+                    </span>
+                </a>
+            {% else %}
+                <div class="vide">Aucun bien publié.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete">
+            <h2><i data-lucide="user-round"></i>Annonceurs les plus consultés</h2>
+            <a class="lien-voir" href="{{ path('admin_agents') }}">Voir tout <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="tableau-conteneur" style="padding: 10px 0 8px">
+            <table class="tableau">
+                <thead><tr><th>Annonceur</th><th>Rôle</th><th class="nombre">Annonces</th><th class="nombre">Vues</th><th>Statut</th></tr></thead>
+                <tbody>
+                {% for u in meilleursAnnonceurs %}
+                    <tr>
+                        <td><a class="personne" href="{{ path('admin_utilisateur', {id: u.id}) }}">
+                            {% if u.avatar %}<img class="avatar" src="{{ u.avatar }}" alt="">{% else %}<span class="avatar">{{ (u.prenom ~ ' ' ~ u.nom)|initiales }}</span>{% endif %}
+                            <span class="personne__nom">{{ u.prenom }} {{ u.nom }}</span>
+                        </a></td>
+                        <td class="texte-gris">{{ u.role == 'agent' ? 'Agent' : 'Propriétaire' }}</td>
+                        <td class="nombre">{{ u.annonces }}</td>
+                        <td class="nombre">{{ u.vues|number_format(0, ',', ' ') }}</td>
+                        <td>{% if u.verifie %}<span class="pastille pastille--vert">Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="vide">Aucun agent ni propriétaire inscrit.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="zap"></i>Actions rapides</h2></div>
+        <div class="actions-rapides">
+            <a class="action-rapide fond-bleu" href="{{ path('admin_utilisateurs') }}"><i data-lucide="user"></i>Gérer les utilisateurs</a>
+            <a class="action-rapide fond-marron" href="{{ path('admin_biens') }}"><i data-lucide="house"></i>Gérer les biens</a>
+            <a class="action-rapide fond-jaune" href="{{ path('admin_signalements') }}"><i data-lucide="flag"></i>Traiter les signalements</a>
+            <a class="action-rapide fond-bleu-clair" href="{{ path('admin_rapports') }}"><i data-lucide="chart-line"></i>Voir les rapports</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

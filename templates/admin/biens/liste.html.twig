@@ -1,0 +1,67 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Biens immobiliers{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Biens immobiliers</h1>
+        <p>Toutes les annonces publiées, quel que soit leur statut.</p>
+    </div>
+    <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens'}) }}"><i data-lucide="download"></i>Exporter (CSV)</a>
+</div>
+
+<section class="carte">
+    <form class="filtres" method="get">
+        <input type="search" name="q" value="{{ filtres.q }}" placeholder="Titre, ville, quartier, annonceur…">
+        <select name="type">
+            <option value="">Tous les types</option>
+            {% for t in types %}<option value="{{ t.value }}" {{ filtres.type == t.value ? 'selected' }}>{{ t.libelle }}</option>{% endfor %}
+        </select>
+        <select name="transaction">
+            <option value="">Location et vente</option>
+            <option value="location" {{ filtres.transaction == 'location' ? 'selected' }}>Location</option>
+            <option value="vente" {{ filtres.transaction == 'vente' ? 'selected' }}>Vente</option>
+        </select>
+        <select name="statut">
+            <option value="">Tous les statuts</option>
+            {% for s in statuts %}<option value="{{ s.value }}" {{ filtres.statut == s.value ? 'selected' }}>{{ s.libelle }}</option>{% endfor %}
+        </select>
+        <select name="region">
+            <option value="">Toutes les régions</option>
+            {% for r in regions %}<option value="{{ r.value }}" {{ filtres.region == r.value ? 'selected' }}>{{ r.libelle }}</option>{% endfor %}
+        </select>
+        <button class="bouton" type="submit"><i data-lucide="search"></i>Filtrer</button>
+    </form>
+
+    <div class="tableau-conteneur">
+        <table class="tableau">
+            <thead><tr><th>Bien</th><th>Type</th><th>Prix</th><th>Annonceur</th><th>Statut</th><th class="nombre">Vues</th><th></th></tr></thead>
+            <tbody>
+            {% for a in annonces %}
+                <tr>
+                    <td><a href="{{ path('admin_bien', {id: a.id}) }}" style="font-weight:500">{{ a.titre }}</a><br>
+                        <span class="texte-gris texte-petit">{{ a.localisation.quartier }}, {{ a.localisation.ville }} · {{ a.datePublication|date('d/m/Y') }}</span></td>
+                    <td>{{ a.typeBien.libelle }}<br>{{ m.transaction(a.typeTransaction) }}</td>
+                    <td style="white-space:nowrap">{{ a.prix|fcfa }}{{ a.typeTransaction.value == 'location' ? '/mois' }}</td>
+                    <td>{{ m.personne(a.publiePar, a.publiePar.role.libelle) }}</td>
+                    <td>{{ m.statut_annonce(a.statut) }}</td>
+                    <td class="nombre">{{ a.nombreVues }}</td>
+                    <td style="text-align:right">
+                        {% if a.statut.value == 'suspendu' %}
+                            {{ m.action(path('admin_bien_reactiver', {id: a.id}), 'Remettre en ligne', 'rotate-ccw', 'bouton--succes') }}
+                        {% else %}
+                            {{ m.action(path('admin_bien_suspendre', {id: a.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre l\'annonce « ' ~ a.titre ~ ' » ? Elle disparaîtra de l\'application.') }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="vide"><i data-lucide="building-2"></i>Aucun bien ne correspond à ces critères.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ m.pagination(page, pages, total, 'admin_biens', filtres) }}
+</section>
+{% endblock %}

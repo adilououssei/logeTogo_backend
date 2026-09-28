@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Connexion · Administration LogeTogo</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-icone.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {{ importmap('admin') }}
+</head>
+<body class="page-connexion">
+<main class="carte-connexion">
+    <img src="{{ asset('images/logo-complet.png') }}" alt="LogeTogo">
+    <h1>Administration</h1>
+    <p class="sous-titre">Espace réservé à l'équipe LogeTogo</p>
+
+    {% for message in app.flashes('erreur') %}
+        <div class="message message--erreur" style="margin-bottom: 14px"><i data-lucide="circle-alert"></i>{{ message }}</div>
+    {% endfor %}
+    {% if erreur %}
+        <div class="message message--erreur" style="margin-bottom: 14px">
+            <i data-lucide="circle-alert"></i>
+            {{ erreur.messageKey == 'Invalid credentials.' ? 'Identifiant ou mot de passe incorrect.' : erreur.messageKey|trans(erreur.messageData, 'security') }}
+        </div>
+    {% endif %}
+
+    <form class="formulaire" method="post" action="{{ path('admin_connexion') }}">
+        <label>Identifiant
+            <span class="champ-icone"><i data-lucide="user"></i>
+                <input class="champ" type="text" name="identifiant" value="{{ dernierIdentifiant }}" placeholder="prenom.nom" autocomplete="username" autofocus required>
+            </span>
+        </label>
+        <label>Mot de passe
+            <span class="champ-icone"><i data-lucide="lock"></i>
+                <input class="champ" type="password" name="motDePasse" autocomplete="current-password" required>
+            </span>
+        </label>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <button class="bouton bouton--bloc" type="submit" style="height: 44px; margin-top: 6px"><i data-lucide="log-in"></i>Se connecter</button>
+    </form>
+</main>
+</body>
+</html>

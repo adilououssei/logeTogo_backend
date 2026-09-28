@@ -40,7 +40,7 @@ class Conversation
 
     /** @var Collection<int, Message> */
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['persist'], orphanRemoval: true)]
-    #[ORM\OrderBy(['dateEnvoi' => 'ASC'])]
+    #[ORM\OrderBy(['dateEnvoi' => \SortDirection::Ascending])]
     private Collection $messages;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

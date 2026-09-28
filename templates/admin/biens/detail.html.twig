@@ -1,0 +1,90 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}{{ annonce.titre }}{% endblock %}
+
+{% block contenu %}
+{% set l = annonce.localisation %}
+<div class="entete-page">
+    <div>
+        <h1>{{ annonce.titre }}</h1>
+        <p class="en-ligne">{{ annonce.typeBien.libelle }} {{ m.transaction(annonce.typeTransaction) }} {{ m.statut_annonce(annonce.statut) }} · publiée le {{ annonce.datePublication|date('d/m/Y à H:i') }}</p>
+    </div>
+    <div class="en-ligne">
+        {% if annonce.statut.value == 'suspendu' %}
+            {{ m.action(path('admin_bien_reactiver', {id: annonce.id}), 'Remettre en ligne', 'rotate-ccw', 'bouton--succes') }}
+        {% else %}
+            {{ m.action(path('admin_bien_suspendre', {id: annonce.id}), 'Suspendre', 'ban', 'bouton--marron', 'Suspendre cette annonce ? Elle disparaîtra de l\'application et son auteur sera prévenu.') }}
+        {% endif %}
+        {{ m.action(path('admin_bien_supprimer', {id: annonce.id}), 'Supprimer', 'trash-2', 'bouton--danger', 'Supprimer définitivement cette annonce, ses photos et ses vidéos ? Cette action est irréversible.') }}
+    </div>
+</div>
+
+<div class="grille grille--deux">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="image"></i>Photos et vidéos</h2></div>
+        <div class="carte__corps">
+            {% if annonce.medias is empty %}
+                <p class="texte-gris">Aucune photo ni vidéo.</p>
+            {% else %}
+                <div class="galerie">
+                    {% for media in annonce.medias %}
+                        {% if media.type.value == 'video' %}
+                            <video src="{{ media.url }}" controls preload="metadata"></video>
+                        {% else %}
+                            <a href="{{ media.url }}" target="_blank" rel="noopener"><img src="{{ media.url }}" alt=""></a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <h3 style="font-size:15px; margin: 18px 0 8px">Description</h3>
+            <p style="white-space: pre-line; color: var(--gris-700); margin: 0">{{ annonce.description ?: '—' }}</p>
+        </div>
+    </section>
+
+    <div class="pile">
+        <section class="carte">
+            <div class="carte__entete"><h2><i data-lucide="file-text"></i>Détails</h2></div>
+            <div class="carte__corps">
+                <dl class="liste-definitions">
+                    <dt>Prix</dt><dd>{{ annonce.prix|fcfa }}{{ annonce.typeTransaction.value == 'location' ? ' / mois' }}</dd>
+                    {% if annonce.typeTransaction.value == 'location' %}
+                        <dt>Avance</dt><dd>{{ annonce.avanceMois ?? 0 }} mois</dd>
+                        <dt>Caution</dt><dd>{{ annonce.cautionMois ?? 0 }} mois</dd>
+                        <dt>Commission</dt><dd>{{ annonce.commission|fcfa }}</dd>
+                    {% endif %}
+                    <dt>Adresse</dt><dd>{{ l.adresse ? l.adresse ~ ', ' }}{{ l.quartier }}, {{ l.ville }} ({{ l.region.libelle }})</dd>
+                    {% if l.latitude %}<dt>GPS</dt><dd><a href="https://www.google.com/maps/search/?api=1&query={{ l.latitude }},{{ l.longitude }}" target="_blank" rel="noopener">{{ l.latitude }}, {{ l.longitude }}</a></dd>{% endif %}
+                    <dt>Pièces</dt><dd>{{ annonce.chambres }} chambre(s), {{ annonce.sallesDeBain }} salle(s) de bain{{ annonce.superficie ? ', ' ~ annonce.superficie ~ ' m²' }}</dd>
+                    <dt>Équipements</dt><dd>{{ annonce.equipements is empty ? '—' : annonce.equipements|join(', ') }}</dd>
+                    <dt>Vues</dt><dd>{{ annonce.nombreVues }}</dd>
+                    <dt>Contact</dt><dd>{{ annonce.contact.telephone ?? annonce.publiePar.telephone ?? '—' }}{% if annonce.contact.whatsapp %} · WhatsApp {{ annonce.contact.whatsapp }}{% endif %}</dd>
+                </dl>
+            </div>
+        </section>
+
+        <section class="carte">
+            <div class="carte__entete"><h2><i data-lucide="user-round"></i>Annonceur</h2></div>
+            <div class="carte__corps">{{ m.personne(annonce.publiePar, annonce.publiePar.role.libelle ~ ' · ' ~ (annonce.publiePar.telephone ?? annonce.publiePar.email ?? '@' ~ annonce.publiePar.identifiant)) }}</div>
+        </section>
+
+        <section class="carte">
+            <div class="carte__entete"><h2><i data-lucide="flag"></i>Signalements ({{ signalements|length }})</h2></div>
+            <div class="carte__corps">
+                {% for s in signalements %}
+                    <div style="padding: 8px 0; {{ not loop.first ? 'border-top: 1px solid var(--gris-100)' }}">
+                        <strong>{{ s.motif.libelle }}</strong>
+                        {% set couleurs = {en_attente: 'jaune', traite: 'rouge', rejete: 'gris'} %}
+                        {% set libelles = {en_attente: 'En attente', traite: 'Annonce suspendue', rejete: 'Rejeté'} %}
+                        <span class="pastille pastille--{{ couleurs[s.statut] }}">{{ libelles[s.statut] }}</span>
+                        <div class="texte-gris texte-petit">Par {{ s.auteur.nomComplet }}, {{ s.dateCreation|il_y_a }}</div>
+                        {% if s.commentaire %}<div style="margin-top: 4px">« {{ s.commentaire }} »</div>{% endif %}
+                    </div>
+                {% else %}
+                    <p class="texte-gris" style="margin:0">Aucun signalement.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

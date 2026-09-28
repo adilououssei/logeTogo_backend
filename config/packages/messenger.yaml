@@ -18,7 +18,9 @@ framework:
             messenger.bus.default: []
 
         routing:
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            # Emails envoyés tout de suite (code de réinitialisation attendu par l'utilisateur),
+            # sans dépendre d'un « messenger:consume » lancé en arrière-plan.
+            # Symfony\Component\Mailer\Messenger\SendEmailMessage: async
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
 

@@ -1,0 +1,79 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Vérifications d'identité{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Vérifications d'identité</h1>
+        <p>Comparez la pièce d'identité avec le nom du compte. Les photos sont supprimées dès la décision.</p>
+    </div>
+</div>
+
+{% if enAttente is empty %}
+    <section class="carte"><div class="vide"><i data-lucide="shield-check"></i>Aucune demande en attente.</div></section>
+{% endif %}
+
+<div class="pile">
+    {% for d in enAttente %}
+        {% set u = d.utilisateur %}
+        <section class="carte">
+            <div class="carte__entete">
+                {{ m.personne(u, u.role.libelle ~ ' · ' ~ (u.region ? u.region.libelle : '')) }}
+                <span class="texte-gris texte-petit" style="margin-left:auto">Reçue {{ d.dateDemande|il_y_a }}</span>
+            </div>
+            <div class="carte__corps">
+                <p style="margin-top:0"><strong>{{ types[d.typeDocument] ?? d.typeDocument }}</strong> · nom du compte : <strong>{{ u.prenom }} {{ u.nom|upper }}</strong></p>
+                <div class="piece-identite">
+                    {% for face in ['recto', 'verso'] %}
+                        {% if attribute(d, face) %}
+                            <a href="{{ path('admin_verification_photo', {id: d.id, face: face}) }}" target="_blank" rel="noopener" title="Agrandir le {{ face }}">
+                                <img src="{{ path('admin_verification_photo', {id: d.id, face: face}) }}" alt="{{ face|capitalize }}">
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="en-ligne marge-haut">
+                    <form class="en-ligne" method="post" action="{{ path('admin_verification_decision', {id: d.id}) }}" data-confirmer="Confirmer l'identité de {{ u.prenom }} {{ u.nom }} et lui accorder le badge « vérifié » ?">
+                        <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+                        <input type="hidden" name="decision" value="approuver">
+                        <button class="bouton bouton--succes" type="submit"><i data-lucide="badge-check"></i>Approuver</button>
+                    </form>
+                    <button class="bouton bouton--contour" type="button" data-afficher="refus-{{ d.id }}"><i data-lucide="x"></i>Refuser…</button>
+                </div>
+                <form id="refus-{{ d.id }}" class="formulaire marge-haut cache" method="post" action="{{ path('admin_verification_decision', {id: d.id}) }}">
+                    <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+                    <input type="hidden" name="decision" value="refuser">
+                    <label>Motif du refus (montré à l'utilisateur)
+                        <textarea class="champ" name="motif" rows="2" required placeholder="Ex. : photo floue, nom différent de celui du compte…"></textarea>
+                    </label>
+                    <div><button class="bouton bouton--danger" type="submit"><i data-lucide="x"></i>Refuser la demande</button></div>
+                </form>
+            </div>
+        </section>
+    {% endfor %}
+</div>
+
+{% if traitees is not empty %}
+<section class="carte marge-haut">
+    <div class="carte__entete"><h2><i data-lucide="clock"></i>Dernières décisions</h2></div>
+    <div class="tableau-conteneur" style="padding-top:10px">
+        <table class="tableau">
+            <thead><tr><th>Utilisateur</th><th>Pièce</th><th>Décision</th><th>Date</th></tr></thead>
+            <tbody>
+            {% for d in traitees %}
+                <tr>
+                    <td>{{ m.personne(d.utilisateur) }}</td>
+                    <td>{{ types[d.typeDocument] ?? d.typeDocument }}</td>
+                    <td>{% if d.estApprouvee %}<span class="pastille pastille--vert">Approuvée</span>{% else %}<span class="pastille pastille--rouge">Refusée</span> <span class="texte-gris texte-petit">{{ d.motifRefus }}</span>{% endif %}</td>
+                    <td class="texte-gris texte-petit">{{ d.dateDecision|date('d/m/Y H:i') }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

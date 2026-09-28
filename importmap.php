@@ -24,7 +24,12 @@
  */
 return [
     'app' => ['path' => './assets/app.js', 'entrypoint' => true],
+    // Interface d'administration (Twig) : styles, icônes et graphiques.
+    'admin' => ['path' => './assets/admin.js', 'entrypoint' => true],
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
     '@hotwired/turbo' => ['version' => '8.0.23'],
+    'chart.js' => ['version' => '4.5.1'],
+    'lucide' => ['version' => '1.48.0'],
+    '@kurkle/color' => ['version' => '0.3.4'],
 ];

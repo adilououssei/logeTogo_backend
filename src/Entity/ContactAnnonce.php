@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -15,10 +16,12 @@ class ContactAnnonce
 {
     #[ORM\Column(length: 30, nullable: true)]
     #[Assert\Length(min: 8, max: 30)]
+    #[Groups(['annonce:prive'])]
     private ?string $telephone = null;
 
     #[ORM\Column(length: 30, nullable: true)]
     #[Assert\Length(min: 8, max: 30)]
+    #[Groups(['annonce:prive'])]
     private ?string $whatsapp = null;
 
     public function getTelephone(): ?string

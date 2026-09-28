@@ -1,0 +1,69 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Utilisateurs{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Utilisateurs</h1>
+        <p>Locataires, propriétaires, agents et administrateurs inscrits sur LogeTogo.</p>
+    </div>
+    <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs'}) }}"><i data-lucide="download"></i>Exporter (CSV)</a>
+</div>
+
+<section class="carte">
+    <form class="filtres" method="get">
+        <input type="search" name="q" value="{{ filtres.q }}" placeholder="Nom, identifiant, email, téléphone…">
+        <select name="role">
+            <option value="">Tous les rôles</option>
+            {% for r in roles %}<option value="{{ r.value }}" {{ filtres.role == r.value ? 'selected' }}>{{ r.libelle }}</option>{% endfor %}
+        </select>
+        <select name="region">
+            <option value="">Toutes les régions</option>
+            {% for r in regions %}<option value="{{ r.value }}" {{ filtres.region == r.value ? 'selected' }}>{{ r.libelle }}</option>{% endfor %}
+        </select>
+        <select name="etat">
+            <option value="">Actifs et suspendus</option>
+            <option value="actif" {{ filtres.etat == 'actif' ? 'selected' }}>Actifs</option>
+            <option value="suspendu" {{ filtres.etat == 'suspendu' ? 'selected' }}>Suspendus</option>
+        </select>
+        <select name="verifie">
+            <option value="">Vérifiés ou non</option>
+            <option value="oui" {{ filtres.verifie == 'oui' ? 'selected' }}>Vérifiés</option>
+            <option value="non" {{ filtres.verifie == 'non' ? 'selected' }}>Non vérifiés</option>
+        </select>
+        <button class="bouton" type="submit"><i data-lucide="search"></i>Filtrer</button>
+    </form>
+
+    <div class="tableau-conteneur">
+        <table class="tableau">
+            <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Région</th><th>Contact</th><th>Inscription</th><th>État</th><th></th></tr></thead>
+            <tbody>
+            {% for u in utilisateurs %}
+                <tr>
+                    <td>{{ m.personne(u) }}</td>
+                    <td>{{ m.role(u.role) }}</td>
+                    <td>{{ u.region ? u.region.libelle : '—' }}</td>
+                    <td class="texte-petit">{{ u.telephone ?? '' }}{% if u.telephone and u.email %}<br>{% endif %}<span class="texte-gris">{{ u.email ?? (u.telephone ? '' : '—') }}</span></td>
+                    <td class="texte-gris texte-petit">{{ u.dateInscription|date('d/m/Y') }}</td>
+                    <td>{{ m.etat_compte(u) }}</td>
+                    <td style="text-align:right">
+                        {% if u.id != app.user.id and u.role.value != 'admin' %}
+                            {% if u.estActif %}
+                                {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre le compte de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ? Il ne pourra plus se connecter.') }}
+                            {% else %}
+                                {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Réactiver', 'rotate-ccw', 'bouton--succes') }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="vide"><i data-lucide="users"></i>Aucun utilisateur ne correspond à ces critères.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ m.pagination(page, pages, total, 'admin_utilisateurs', filtres) }}
+</section>
+{% endblock %}

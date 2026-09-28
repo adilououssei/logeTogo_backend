@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Enum\Region;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -17,26 +18,32 @@ class Localisation
 {
     #[ORM\Column(length: 20, enumType: Region::class)]
     #[Assert\NotNull(message: 'La région est requise.')]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?Region $region = null;
 
     #[ORM\Column(length: 100)]
     #[Assert\NotBlank(message: 'La ville est requise.')]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?string $ville = null;
 
     #[ORM\Column(length: 100)]
     #[Assert\NotBlank(message: 'Le quartier est requis.')]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?string $quartier = null;
 
     /** Précisions libres : rue, point de repère… */
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['annonce:prive'])]
     private ?string $adresse = null;
 
     #[ORM\Column(nullable: true)]
     #[Assert\Range(min: -90, max: 90)]
+    #[Groups(['annonce:prive'])]
     private ?float $latitude = null;
 
     #[ORM\Column(nullable: true)]
     #[Assert\Range(min: -180, max: 180)]
+    #[Groups(['annonce:prive'])]
     private ?float $longitude = null;
 
     public function getRegion(): ?Region

@@ -1,0 +1,75 @@
+{# Éléments répétés dans les pages d'administration. #}
+
+{% macro avatar(u, grand = false) %}
+    {% if u.avatar %}
+        <img class="avatar {{ grand ? 'avatar--grand' }}" src="{{ u.avatar }}" alt="">
+    {% else %}
+        <span class="avatar {{ grand ? 'avatar--grand' }}">{{ (u.prenom ~ ' ' ~ u.nom)|initiales }}</span>
+    {% endif %}
+{% endmacro %}
+
+{% macro personne(u, sous = null) %}
+    <a class="personne" href="{{ path('admin_utilisateur', {id: u.id}) }}">
+        {{ _self.avatar(u) }}
+        <span>
+            <span class="personne__nom">{{ u.prenom }} {{ u.nom }}{% if u.verifie %} <i data-lucide="badge-check" class="icone-verifie"></i>{% endif %}</span><br>
+            <span class="personne__sous">{{ sous ?? ('@' ~ u.identifiant) }}</span>
+        </span>
+    </a>
+{% endmacro %}
+
+{% macro statut_annonce(statut) %}
+    {% set couleurs = {disponible: 'vert', occupe: 'jaune', vendu: 'bleu', suspendu: 'rouge'} %}
+    <span class="pastille pastille--{{ couleurs[statut.value] }}">{{ statut.libelle }}</span>
+{% endmacro %}
+
+{% macro transaction(t) %}
+    <span class="pastille pastille--{{ t.value == 'location' ? 'vert' : 'jaune' }}">{{ t.libelle }}</span>
+{% endmacro %}
+
+{% macro role(r) %}
+    {% set couleurs = {locataire: 'bleu', agent: 'marron', proprietaire: 'jaune', admin: 'gris'} %}
+    <span class="pastille pastille--{{ couleurs[r.value] }}">{{ r.libelle }}</span>
+{% endmacro %}
+
+{% macro etat_compte(u) %}
+    {% if u.estActif %}
+        <span class="pastille pastille--vert">Actif</span>
+    {% else %}
+        <span class="pastille pastille--rouge">Suspendu</span>
+    {% endif %}
+{% endmacro %}
+
+{# Formulaire POST protégé (jeton CSRF), avec confirmation facultative. #}
+{% macro action(url, texte, icone, classe = 'bouton--contour', confirmation = null) %}
+    <form class="en-ligne" method="post" action="{{ url }}" {% if confirmation %}data-confirmer="{{ confirmation }}"{% endif %}>
+        <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+        <button class="bouton bouton--petit {{ classe }}" type="submit"><i data-lucide="{{ icone }}"></i>{{ texte }}</button>
+    </form>
+{% endmacro %}
+
+{% macro pagination(page, pages, total, route, filtres) %}
+    <div class="pagination">
+        <span>{{ total }} résultat{{ total > 1 ? 's' }} · page {{ page }} sur {{ pages }}</span>
+        <span class="pagination__liens">
+            {% if page > 1 %}<a class="bouton bouton--petit bouton--contour" href="{{ path(route, filtres|merge({page: page - 1})) }}">Précédente</a>{% endif %}
+            {% if page < pages %}<a class="bouton bouton--petit bouton--contour" href="{{ path(route, filtres|merge({page: page + 1})) }}">Suivante</a>{% endif %}
+        </span>
+    </div>
+{% endmacro %}
+
+{% macro indicateur(icone, fond, libelle, valeur, ce_mois, lien) %}
+    <a class="carte indicateur" href="{{ lien }}">
+        <span class="indicateur__icone {{ fond }}"><i data-lucide="{{ icone }}"></i></span>
+        <span>
+            <div class="indicateur__libelle">{{ libelle }}</div>
+            <div class="indicateur__valeur">{{ valeur|number_format(0, ',', ' ') }}</div>
+            {% if ce_mois > 0 %}
+                <div class="indicateur__tendance"><i data-lucide="arrow-up"></i>+{{ ce_mois }} ce mois</div>
+            {% else %}
+                <div class="indicateur__tendance indicateur__tendance--neutre">Aucun nouveau ce mois</div>
+            {% endif %}
+        </span>
+        <span class="indicateur__fleche"><i data-lucide="arrow-right"></i></span>
+    </a>
+{% endmacro %}

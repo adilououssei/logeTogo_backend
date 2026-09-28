@@ -1,0 +1,65 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Agents immobiliers{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Agents immobiliers</h1>
+        <p>Leurs annonces, leur audience et leur vérification d'identité.</p>
+    </div>
+</div>
+
+<section class="carte">
+    <form class="filtres" method="get">
+        <input type="search" name="q" value="{{ filtres.q }}" placeholder="Nom, identifiant, email, téléphone…">
+        <select name="region">
+            <option value="">Toutes les régions</option>
+            {% for r in regions %}<option value="{{ r.value }}" {{ filtres.region == r.value ? 'selected' }}>{{ r.libelle }}</option>{% endfor %}
+        </select>
+        <select name="verifie">
+            <option value="">Vérifiés ou non</option>
+            <option value="oui" {{ filtres.verifie == 'oui' ? 'selected' }}>Vérifiés</option>
+            <option value="non" {{ filtres.verifie == 'non' ? 'selected' }}>Non vérifiés</option>
+        </select>
+        <select name="etat">
+            <option value="">Actifs et suspendus</option>
+            <option value="actif" {{ filtres.etat == 'actif' ? 'selected' }}>Actifs</option>
+            <option value="suspendu" {{ filtres.etat == 'suspendu' ? 'selected' }}>Suspendus</option>
+        </select>
+        <button class="bouton" type="submit"><i data-lucide="search"></i>Filtrer</button>
+    </form>
+
+    <div class="tableau-conteneur">
+        <table class="tableau">
+            <thead><tr><th>Agent</th><th>Région</th><th class="nombre">Annonces</th><th class="nombre">Disponibles</th><th class="nombre">Vues</th><th>Identité</th><th>État</th><th></th></tr></thead>
+            <tbody>
+            {% for u in utilisateurs %}
+                {% set a = activite[u.id] ?? {annonces: 0, disponibles: 0, vues: 0} %}
+                <tr>
+                    <td>{{ m.personne(u, u.telephone ?? ('@' ~ u.identifiant)) }}</td>
+                    <td>{{ u.region ? u.region.libelle : '—' }}</td>
+                    <td class="nombre">{{ a.annonces }}</td>
+                    <td class="nombre">{{ a.disponibles ?? 0 }}</td>
+                    <td class="nombre">{{ a.vues|number_format(0, ',', ' ') }}</td>
+                    <td>{% if u.verifie %}<span class="pastille pastille--vert"><i data-lucide="badge-check"></i>Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
+                    <td>{{ m.etat_compte(u) }}</td>
+                    <td><div class="en-ligne" style="justify-content:flex-end">
+                        {{ m.action(path('admin_utilisateur_badge', {id: u.id}), u.verifie ? 'Retirer le badge' : 'Vérifier', u.verifie ? 'badge-x' : 'badge-check', 'bouton--contour', u.verifie ? 'Retirer le badge « vérifié » de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ?' : 'Accorder le badge « vérifié » à ' ~ u.prenom ~ ' ' ~ u.nom ~ ' sans pièce d\'identité ?') }}
+                        {% if u.estActif %}
+                            {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre le compte de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ?') }}
+                        {% else %}
+                            {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Réactiver', 'rotate-ccw', 'bouton--succes') }}
+                        {% endif %}
+                    </div></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8" class="vide"><i data-lucide="user-round"></i>Aucun agent ne correspond à ces critères.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ m.pagination(page, pages, total, 'admin_agents', filtres|filter((v, k) => k != 'role')) }}
+</section>
+{% endblock %}

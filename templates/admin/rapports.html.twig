@@ -1,0 +1,108 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Rapports{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Rapports</h1>
+        <p>Croissance et activité de la plateforme sur les 12 derniers mois.</p>
+    </div>
+    <div class="en-ligne">
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs'}) }}"><i data-lucide="download"></i>Utilisateurs (CSV)</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens'}) }}"><i data-lucide="download"></i>Biens (CSV)</a>
+    </div>
+</div>
+
+<div class="grille grille--indicateurs">
+    {{ m.indicateur('eye', 'fond-bleu', 'Vues d\'annonces', activite.vues, 0, path('admin_biens')) }}
+    {{ m.indicateur('message-circle', 'fond-marron', 'Conversations', activite.conversations, 0, path('admin_rapports')) }}
+    {{ m.indicateur('heart', 'fond-jaune', 'Mises en favori', activite.favoris, 0, path('admin_rapports')) }}
+    {{ m.indicateur('star', 'fond-bleu-clair', 'Avis publiés', activite.avis, 0, path('admin_rapports')) }}
+</div>
+
+<div class="grille grille--deux">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="user-plus"></i>Inscriptions par mois</h2></div>
+        <div class="carte__corps"><div class="zone-graphique" style="height: 260px">
+            <canvas data-graphique="{{ {type: 'barres', empile: true, legende: true, libelles: inscriptions.mois, series: [
+                {nom: 'Locataires', couleur: 'bleu', valeurs: inscriptions.series.locataire},
+                {nom: 'Agents', couleur: 'marron', valeurs: inscriptions.series.agent},
+                {nom: 'Propriétaires', couleur: 'jaune', valeurs: inscriptions.series.proprietaire},
+            ]}|json_encode }}"></canvas>
+        </div></div>
+    </section>
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="house"></i>Annonces publiées par mois</h2></div>
+        <div class="carte__corps"><div class="zone-graphique" style="height: 260px">
+            <canvas data-graphique="{{ {type: 'ligne', legende: true, libelles: annonces.mois, series: [
+                {nom: 'Location', couleur: 'bleu', valeurs: annonces.location},
+                {nom: 'Vente', couleur: 'jaune', valeurs: annonces.vente},
+            ]}|json_encode }}"></canvas>
+        </div></div>
+    </section>
+</div>
+
+<div class="grille grille--trois marge-haut">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="map-pin"></i>Par région</h2></div>
+        <div class="tableau-conteneur" style="padding-top:10px">
+            <table class="tableau">
+                <thead><tr><th>Région</th><th class="nombre">Annonces</th><th class="nombre">Utilisateurs</th></tr></thead>
+                <tbody>{% for r in regions %}<tr><td>{{ r.region }}</td><td class="nombre">{{ r.annonces }}</td><td class="nombre">{{ r.utilisateurs }}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="chart-pie"></i>Types de biens</h2></div>
+        <div class="tableau-conteneur" style="padding-top:10px">
+            <table class="tableau">
+                <thead><tr><th>Type</th><th class="nombre">Annonces</th><th class="nombre">Part</th></tr></thead>
+                <tbody>
+                {% for r in repartition %}<tr><td>{{ r.libelle }}</td><td class="nombre">{{ r.nombre }}</td><td class="nombre">{{ r.pourcentage }} %</td></tr>
+                {% else %}<tr><td colspan="3" class="vide">Aucune annonce.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="activity"></i>Qualité et confiance</h2></div>
+        <div class="carte__corps">
+            <dl class="liste-definitions" style="grid-template-columns: 1fr auto">
+                <dt>Note moyenne des avis</dt><dd>{{ activite.noteMoyenne ? activite.noteMoyenne|number_format(1, ',') ~ '/5' : '—' }}</dd>
+                <dt>Messages échangés</dt><dd>{{ activite.messages|number_format(0, ',', ' ') }}</dd>
+                <dt>Alertes de recherche</dt><dd>{{ activite.alertes }}</dd>
+                <dt>Annonceurs vérifiés</dt><dd>{{ activite.agentsVerifies }}</dd>
+                <dt>Comptes suspendus</dt><dd>{{ activite.comptesSuspendus }}</dd>
+                <dt>Propriétaires inscrits</dt><dd>{{ indicateurs.proprietaires.total }}</dd>
+            </dl>
+        </div>
+    </section>
+</div>
+
+<section class="carte marge-haut">
+    <div class="carte__entete"><h2><i data-lucide="trophy"></i>Annonceurs les plus consultés</h2></div>
+    <div class="tableau-conteneur" style="padding-top:10px">
+        <table class="tableau">
+            <thead><tr><th>#</th><th>Annonceur</th><th>Rôle</th><th class="nombre">Annonces</th><th class="nombre">Vues</th><th>Identité</th></tr></thead>
+            <tbody>
+            {% for u in meilleursAnnonceurs %}
+                <tr>
+                    <td class="texte-gris">{{ loop.index }}</td>
+                    <td><a href="{{ path('admin_utilisateur', {id: u.id}) }}">{{ u.prenom }} {{ u.nom }}</a> <span class="texte-gris texte-petit">@{{ u.identifiant }}</span></td>
+                    <td>{{ u.role == 'agent' ? 'Agent' : 'Propriétaire' }}</td>
+                    <td class="nombre">{{ u.annonces }}</td>
+                    <td class="nombre">{{ u.vues|number_format(0, ',', ' ') }}</td>
+                    <td>{% if u.verifie %}<span class="pastille pastille--vert">Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="vide">Aucun annonceur.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -5,31 +5,92 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        # Connexion par identifiant (« prenom.nom »), pas par email.
+        # Connexion par identifiant (« prenom.nom »), pas par email : la recherche
+        # (insensible aux majuscules et aux espaces) est faite par UtilisateurRepository::loadUserByIdentifier().
         fournisseur_utilisateurs:
             entity:
                 class: App\Entity\Utilisateur
-                property: identifiant
 
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+
+        # Connexion par mot de passe, dans son propre pare-feu : la limite de tentatives ne
+        # s'applique qu'ici. Dans le pare-feu « api », elle bloquerait aussi les requêtes munies
+        # d'un jeton valide dès qu'une adresse IP partagée (NAT des opérateurs mobiles) cumule des échecs.
+        # POST /api/auth/connexion {"identifiant": "...", "motDePasse": "..."} → {"token", "refresh_token", "utilisateur"}
+        connexion:
+            pattern: ^/api/auth/connexion$
+            stateless: true
+            provider: fournisseur_utilisateurs
+            user_checker: App\Security\VerificateurCompte
+            json_login:
+                check_path: api_auth_connexion
+                username_path: identifiant
+                password_path: motDePasse
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            # Au-delà de 5 échecs en 15 minutes pour un même identifiant (et une même IP), la connexion est bloquée.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+
+        # API consommée par l'application mobile : sans session, authentifiée par jeton JWT.
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: fournisseur_utilisateurs
+            user_checker: App\Security\VerificateurCompte
+            jwt: ~
+            # POST /api/auth/renouveler {"refresh_token": "..."} → nouveau {token, refresh_token}
+            refresh_jwt:
+                check_path: api_auth_renouveler
+                invalidate_token_on_logout: true
+            # POST /api/auth/deconnexion {"refresh_token": "..."} → le jeton de renouvellement est supprimé
+            logout:
+                path: api_auth_deconnexion
+            entry_point: jwt
+
+        # Interface d'administration (navigateur, Twig) : session et formulaire de connexion.
+        # Réservée aux comptes « admin » ; créer le premier avec : php bin/console app:creer-admin
+        admin:
+            pattern: ^/admin
+            lazy: true
+            provider: fournisseur_utilisateurs
+            user_checker: App\Security\VerificateurCompte
+            form_login:
+                login_path: admin_connexion
+                check_path: admin_connexion
+                username_parameter: identifiant
+                password_parameter: motDePasse
+                default_target_path: admin_tableau_de_bord
+                enable_csrf: true
+            logout:
+                path: admin_deconnexion
+                target: admin_connexion
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+            # Un compte non administrateur est déconnecté et renvoyé vers la connexion.
+            access_denied_handler: App\Security\AccesAdminRefuse
+
         main:
             lazy: true
             provider: fournisseur_utilisateurs
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/admin/connexion$, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        # Renouveler et se déconnecter doivent marcher même avec un jeton d'accès expiré.
+        - { path: ^/api/auth/(inscription|connexion|renouveler|deconnexion)$, roles: PUBLIC_ACCESS }
+        # Mot de passe oublié : demande du code, vérification, nouveau mot de passe.
+        - { path: ^/api/auth/mot-de-passe-oublie(/verifier|/reinitialiser)?$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/, roles: IS_AUTHENTICATED_FULLY }
+        # Le reste de l'API (catalogue…) est public ; chaque action protégée utilise #[IsGranted].
+        - { path: ^/api/, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

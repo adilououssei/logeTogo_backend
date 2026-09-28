@@ -1,0 +1,53 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Signalements{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Signalements</h1>
+        <p>Annonces signalées par les utilisateurs de l'application. Suspendre l'annonce la retire du catalogue et prévient son auteur.</p>
+    </div>
+</div>
+
+<section class="carte">
+    <nav class="onglets">
+        {% for cle, libelle in {en_attente: 'En attente', traite: 'Annonces suspendues', rejete: 'Rejetés'} %}
+            <a class="onglet {{ statut == cle ? 'onglet--actif' }}" href="{{ path('admin_signalements', {statut: cle}) }}">{{ libelle }}</a>
+        {% endfor %}
+        <a class="onglet {{ statut is null ? 'onglet--actif' }}" href="{{ path('admin_signalements', {statut: 'tous'}) }}">Tous</a>
+    </nav>
+
+    <div class="tableau-conteneur">
+        <table class="tableau">
+            <thead><tr><th>Annonce</th><th>Motif</th><th>Signalé par</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+            {% for s in signalements %}
+                {% set a = s.annonce %}
+                <tr>
+                    <td><a href="{{ path('admin_bien', {id: a.id}) }}" style="font-weight:500">{{ a.titre }}</a><br>
+                        <span class="texte-gris texte-petit">de {{ a.publiePar.nomComplet }} · {{ m.statut_annonce(a.statut) }}</span></td>
+                    <td><strong>{{ s.motif.libelle }}</strong>{% if s.commentaire %}<br><span class="texte-gris texte-petit">« {{ s.commentaire }} »</span>{% endif %}</td>
+                    <td>{{ m.personne(s.auteur) }}</td>
+                    <td class="texte-gris texte-petit" style="white-space:nowrap">{{ s.dateCreation|il_y_a|capitalize }}</td>
+                    <td>
+                        {% set couleurs = {en_attente: 'jaune', traite: 'rouge', rejete: 'gris'} %}
+                        {% set libelles = {en_attente: 'En attente', traite: 'Annonce suspendue', rejete: 'Rejeté'} %}
+                        <span class="pastille pastille--{{ couleurs[s.statut] }}">{{ libelles[s.statut] }}</span>
+                    </td>
+                    <td><div class="actions-colonne">
+                        {% if s.estEnAttente %}
+                            {{ m.action(path('admin_signalement_suspendre', {id: s.id}), 'Suspendre l\'annonce', 'ban', 'bouton--danger', 'Suspendre « ' ~ a.titre ~ ' » ? L\'annonce disparaîtra de l\'application et son auteur sera prévenu.') }}
+                            {{ m.action(path('admin_signalement_rejeter', {id: s.id}), 'Rejeter', 'x', 'bouton--contour', 'Rejeter ce signalement ? L\'annonce reste en ligne.') }}
+                        {% endif %}
+                    </div></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="vide"><i data-lucide="flag"></i>{{ statut == 'en_attente' ? 'Aucun signalement en attente.' : 'Aucun signalement.' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

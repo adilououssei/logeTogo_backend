@@ -11,4 +11,9 @@ enum TypeBien: string
     case VILLA = 'villa';
     case BUREAU = 'bureau';
     case TERRAIN = 'terrain';
+
+    public function libelle(): string
+    {
+        return ucfirst($this->value);
+    }
 }

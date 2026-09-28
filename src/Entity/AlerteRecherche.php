@@ -8,6 +8,7 @@ use App\Enum\TypeTransaction;
 use App\Repository\AlerteRechercheRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -22,6 +23,7 @@ class AlerteRecherche
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['alerte:lecture'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne]
@@ -29,26 +31,33 @@ class AlerteRecherche
     private ?Utilisateur $utilisateur = null;
 
     #[ORM\Column(length: 20, nullable: true, enumType: Region::class)]
+    #[Groups(['alerte:lecture'])]
     private ?Region $region = null;
 
     #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['alerte:lecture'])]
     private ?string $quartier = null;
 
     #[ORM\Column(length: 20, nullable: true, enumType: TypeBien::class)]
+    #[Groups(['alerte:lecture'])]
     private ?TypeBien $typeBien = null;
 
     #[ORM\Column(length: 20, nullable: true, enumType: TypeTransaction::class)]
+    #[Groups(['alerte:lecture'])]
     private ?TypeTransaction $typeTransaction = null;
 
     /** En FCFA. */
     #[ORM\Column(type: Types::BIGINT, nullable: true)]
     #[Assert\Positive]
+    #[Groups(['alerte:lecture'])]
     private ?int $prixMax = null;
 
     #[ORM\Column]
+    #[Groups(['alerte:lecture'])]
     private bool $estActive = true;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['alerte:lecture'])]
     private ?\DateTimeImmutable $dateCreation = null;
 
     #[ORM\PrePersist]

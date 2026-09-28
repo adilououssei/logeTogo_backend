@@ -1,0 +1,10 @@
+lexik_jwt_authentication:
+    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
+
+    # Jeton d'accès court (1 heure) : l'application le renouvelle seule avec le jeton de
+    # renouvellement (voir gesdinet_jwt_refresh_token.yaml), l'utilisateur reste connecté.
+    token_ttl: 3600
+    # Le jeton porte l'identifiant (« prenom.nom ») de l'utilisateur.
+    user_id_claim: identifiant

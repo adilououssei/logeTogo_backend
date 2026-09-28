@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -24,84 +25,109 @@ class Annonce
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 150)]
     #[Assert\NotBlank(message: 'Le titre est requis.')]
     #[Assert\Length(max: 150)]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?string $titre = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank(message: 'La description est requise.')]
+    #[Groups(['annonce:detail'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 20, enumType: TypeBien::class)]
     #[Assert\NotNull]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?TypeBien $typeBien = null;
 
     #[ORM\Column(length: 20, enumType: TypeTransaction::class)]
     #[Assert\NotNull]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?TypeTransaction $typeTransaction = null;
 
     /** En FCFA : loyer mensuel (location) ou prix total (vente). */
     #[ORM\Column(type: Types::BIGINT)]
     #[Assert\NotNull(message: 'Le prix est requis.')]
     #[Assert\Positive]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $prix = null;
 
     /** Location uniquement : nombre de mois d'avance à payer à l'entrée. */
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     #[Assert\PositiveOrZero]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $avanceMois = null;
 
     /** Location uniquement : nombre de mois de caution. */
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     #[Assert\PositiveOrZero]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $cautionMois = null;
 
     /** Commission de l'agent (démarcheur) en FCFA. */
     #[ORM\Column(type: Types::BIGINT, nullable: true)]
     #[Assert\PositiveOrZero]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $commission = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
     #[Assert\PositiveOrZero]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private int $chambres = 0;
 
     #[ORM\Column(type: Types::SMALLINT)]
     #[Assert\PositiveOrZero]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private int $sallesDeBain = 0;
 
     /** En m². */
     #[ORM\Column(nullable: true)]
     #[Assert\Positive]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?int $superficie = null;
 
     /** @var list<string> Ex. « Eau courante », « Électricité », « Climatisation »… */
     #[ORM\Column(type: Types::JSON)]
+    #[Groups(['annonce:detail'])]
     private array $equipements = [];
 
     #[ORM\Column(length: 20, enumType: StatutAnnonce::class)]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private StatutAnnonce $statut = StatutAnnonce::DISPONIBLE;
 
     #[ORM\Column]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private int $nombreVues = 0;
+
+    /** Note moyenne des avis (calculée, non enregistrée en base). */
+    private ?float $noteMoyenne = null;
+
+    /** Nombre d'avis (calculé, non enregistré en base). */
+    private int $nombreAvis = 0;
 
     #[ORM\Embedded(class: Localisation::class)]
     #[Assert\Valid]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private Localisation $localisation;
 
     #[ORM\Embedded(class: ContactAnnonce::class)]
     #[Assert\Valid]
+    #[Groups(['annonce:prive'])]
     private ContactAnnonce $contact;
 
     #[ORM\ManyToOne(inversedBy: 'annonces')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?Utilisateur $publiePar = null;
 
     /** @var Collection<int, Media> */
     #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'annonce', cascade: ['persist'], orphanRemoval: true)]
-    #[ORM\OrderBy(['ordre' => 'ASC'])]
+    #[ORM\OrderBy(['ordre' => \SortDirection::Ascending])]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private Collection $medias;
 
     /** @var Collection<int, Avis> */
@@ -109,9 +135,11 @@ class Annonce
     private Collection $avis;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     private ?\DateTimeImmutable $datePublication = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['annonce:detail'])]
     private ?\DateTimeImmutable $dateModification = null;
 
     public function __construct()
@@ -135,6 +163,7 @@ class Annonce
     }
 
     /** Somme à payer à l'entrée pour une location : avance + commission. */
+    #[Groups(['annonce:liste', 'annonce:detail'])]
     public function getTotalEntree(): ?int
     {
         if (TypeTransaction::LOCATION !== $this->typeTransaction || null === $this->prix) {
@@ -303,6 +332,27 @@ class Annonce
     public function setStatut(StatutAnnonce $statut): static
     {
         $this->statut = $statut;
+
+        return $this;
+    }
+
+    #[Groups(['annonce:liste', 'annonce:detail'])]
+    public function getNoteMoyenne(): ?float
+    {
+        return $this->noteMoyenne;
+    }
+
+    #[Groups(['annonce:liste', 'annonce:detail'])]
+    public function getNombreAvis(): int
+    {
+        return $this->nombreAvis;
+    }
+
+    /** Renseigné par le service Notation avant l'envoi à l'application. */
+    public function definirNotes(?float $noteMoyenne, int $nombreAvis): static
+    {
+        $this->noteMoyenne = null !== $noteMoyenne ? round($noteMoyenne, 1) : null;
+        $this->nombreAvis = $nombreAvis;
 
         return $this;
     }

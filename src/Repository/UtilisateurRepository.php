@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Utilisateur;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
@@ -12,11 +13,26 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 /**
  * @extends ServiceEntityRepository<Utilisateur>
  */
-class UtilisateurRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+class UtilisateurRepository extends ServiceEntityRepository implements PasswordUpgraderInterface, UserLoaderInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Utilisateur::class);
+    }
+
+    /** Normalise une saisie d'identifiant : « Kofi.Mensah  » → « kofi.mensah ». */
+    public static function normaliserIdentifiant(string $saisie): string
+    {
+        return mb_strtolower(trim($saisie));
+    }
+
+    /**
+     * Utilisé par la sécurité (connexion et jeton JWT) : la saisie de
+     * l'utilisateur est tolérée aux majuscules et espaces près.
+     */
+    public function loadUserByIdentifier(string $identifier): ?Utilisateur
+    {
+        return $this->findOneBy(['identifiant' => self::normaliserIdentifiant($identifier)]);
     }
 
     /** Re-hache automatiquement le mot de passe quand l'algorithme évolue. */

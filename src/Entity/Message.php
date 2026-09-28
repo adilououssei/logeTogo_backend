@@ -6,6 +6,7 @@ use App\Enum\TypeMessage;
 use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -18,6 +19,7 @@ class Message
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['message:lecture'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
@@ -29,25 +31,31 @@ class Message
     private ?Utilisateur $expediteur = null;
 
     #[ORM\Column(length: 10, enumType: TypeMessage::class)]
+    #[Groups(['message:lecture'])]
     private TypeMessage $type = TypeMessage::TEXTE;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Assert\Length(max: 5000)]
+    #[Groups(['message:lecture'])]
     private ?string $contenu = null;
 
     /** Fichier joint (vocal, photo, vidéo, document). */
     #[ORM\Column(length: 500, nullable: true)]
+    #[Groups(['message:lecture'])]
     private ?string $urlFichier = null;
 
     /** Durée d'un message vocal, en secondes. */
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     #[Assert\Positive]
+    #[Groups(['message:lecture'])]
     private ?int $dureeVocal = null;
 
     #[ORM\Column]
+    #[Groups(['message:lecture'])]
     private bool $estLu = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['message:lecture'])]
     private ?\DateTimeImmutable $dateEnvoi = null;
 
     #[ORM\PrePersist]
@@ -83,6 +91,13 @@ class Message
         $this->conversation = $conversation;
 
         return $this;
+    }
+
+    /** Permet à l'application de savoir de quel côté afficher la bulle. */
+    #[Groups(['message:lecture'])]
+    public function getIdExpediteur(): ?int
+    {
+        return $this->expediteur?->getId();
     }
 
     public function getExpediteur(): ?Utilisateur

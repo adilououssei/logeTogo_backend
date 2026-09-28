@@ -1,0 +1,82 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}{{ utilisateur.nomComplet }}{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div class="en-ligne" style="gap: 18px">
+        {{ m.avatar(utilisateur, true) }}
+        <div>
+            <h1>{{ utilisateur.prenom }} {{ utilisateur.nom }}{% if utilisateur.verifie %} <i data-lucide="badge-check" style="color: var(--bleu)"></i>{% endif %}</h1>
+            <p class="en-ligne">@{{ utilisateur.identifiant }} · {{ m.role(utilisateur.role) }} {{ m.etat_compte(utilisateur) }}</p>
+        </div>
+    </div>
+    {% if utilisateur.id != app.user.id and utilisateur.role.value != 'admin' %}
+        <div class="en-ligne">
+            {{ m.action(path('admin_utilisateur_badge', {id: utilisateur.id}), utilisateur.verifie ? 'Retirer le badge' : 'Accorder le badge', utilisateur.verifie ? 'badge-x' : 'badge-check', 'bouton--contour', utilisateur.verifie ? 'Retirer le badge « vérifié » ?' : 'Accorder le badge « vérifié » sans pièce d\'identité ?') }}
+            {% if utilisateur.estActif %}
+                {{ m.action(path('admin_utilisateur_etat', {id: utilisateur.id}), 'Suspendre le compte', 'ban', 'bouton--danger', 'Suspendre ce compte ? L\'utilisateur ne pourra plus se connecter.') }}
+            {% else %}
+                {{ m.action(path('admin_utilisateur_etat', {id: utilisateur.id}), 'Réactiver le compte', 'rotate-ccw', 'bouton--succes') }}
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<div class="grille grille--deux">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="id-card"></i>Informations</h2></div>
+        <div class="carte__corps">
+            <dl class="liste-definitions">
+                <dt>Région</dt><dd>{{ utilisateur.region ? utilisateur.region.libelle : '—' }}</dd>
+                <dt>Téléphone</dt><dd>{{ utilisateur.telephone ? (utilisateur.telephone starts with '+' ? '' : utilisateur.indicatifPays ~ ' ') ~ utilisateur.telephone : '—' }}</dd>
+                <dt>WhatsApp</dt><dd>{{ utilisateur.whatsapp ?? '—' }}</dd>
+                <dt>Email</dt><dd>{{ utilisateur.email ?? '—' }}</dd>
+                <dt>Inscription</dt><dd>{{ utilisateur.dateInscription|format_datetime('long', 'short', locale='fr') }}</dd>
+                <dt>Note</dt><dd>{{ utilisateur.noteMoyenne ? utilisateur.noteMoyenne|number_format(1, ',') ~ '/5 (' ~ utilisateur.nombreAvis ~ ' avis)' : 'Aucun avis' }}</dd>
+                <dt>Alertes email</dt><dd>{{ utilisateur.alertesEmail ? 'Oui' : 'Non' }}</dd>
+            </dl>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="shield-check"></i>Vérification d'identité</h2></div>
+        <div class="carte__corps">
+            {% if utilisateur.verifie %}
+                <p><span class="pastille pastille--vert"><i data-lucide="badge-check"></i>Identité vérifiée</span></p>
+            {% elseif demande and demande.estEnAttente %}
+                <p><span class="pastille pastille--jaune">Demande en attente</span> depuis le {{ demande.dateDemande|date('d/m/Y') }}.</p>
+                <a class="bouton bouton--petit" href="{{ path('admin_verifications') }}"><i data-lucide="shield-check"></i>Examiner la demande</a>
+            {% elseif demande and demande.statut == 'refusee' %}
+                <p><span class="pastille pastille--rouge">Dernière demande refusée</span> le {{ demande.dateDecision|date('d/m/Y') }}{% if demande.motifRefus %} : {{ demande.motifRefus }}{% endif %}</p>
+            {% else %}
+                <p class="texte-gris">Aucune demande de vérification.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% if annonces is not empty %}
+<section class="carte marge-haut">
+    <div class="carte__entete"><h2><i data-lucide="building-2"></i>Annonces ({{ annonces|length }})</h2></div>
+    <div class="tableau-conteneur" style="padding-top: 10px">
+        <table class="tableau">
+            <thead><tr><th>Titre</th><th>Type</th><th>Prix</th><th>Statut</th><th class="nombre">Vues</th><th>Publication</th></tr></thead>
+            <tbody>
+            {% for a in annonces %}
+                <tr>
+                    <td><a href="{{ path('admin_bien', {id: a.id}) }}">{{ a.titre }}</a><br><span class="texte-gris texte-petit">{{ a.localisation.quartier }}, {{ a.localisation.ville }}</span></td>
+                    <td>{{ a.typeBien.libelle }} {{ m.transaction(a.typeTransaction) }}</td>
+                    <td>{{ a.prix|fcfa }}</td>
+                    <td>{{ m.statut_annonce(a.statut) }}</td>
+                    <td class="nombre">{{ a.nombreVues }}</td>
+                    <td class="texte-gris texte-petit">{{ a.datePublication|date('d/m/Y') }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

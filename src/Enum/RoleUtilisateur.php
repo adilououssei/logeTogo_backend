@@ -9,6 +9,16 @@ enum RoleUtilisateur: string
     case AGENT = 'agent';
     case ADMIN = 'admin';
 
+    public function libelle(): string
+    {
+        return match ($this) {
+            self::LOCATAIRE => 'Locataire',
+            self::PROPRIETAIRE => 'Propriétaire',
+            self::AGENT => 'Agent immobilier',
+            self::ADMIN => 'Administrateur',
+        };
+    }
+
     /** Rôle Symfony correspondant, utilisé par la sécurité (#[IsGranted('ROLE_AGENT')], voters…). */
     public function roleSymfony(): string
     {

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block titre %}Administration{% endblock %} · LogeTogo</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-icone.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {{ importmap('admin') }}
+</head>
+<body>
+{% set route = app.request.attributes.get('_route') %}
+{% set a_traiter = admin_a_traiter() %}
+{% set total_a_traiter = a_traiter.signalements + a_traiter.verifications %}
+{% set admin = app.user %}
+
+<div class="admin">
+    <aside class="barre-laterale">
+        <a class="barre-laterale__logo" href="{{ path('admin_tableau_de_bord') }}">
+            <img src="{{ asset('images/logo-icone.png') }}" alt="">
+            <span>LogeTogo</span>
+        </a>
+
+        <ul class="menu">
+            {% set entrees = [
+                {route: 'admin_tableau_de_bord', icone: 'house', texte: 'Tableau de bord', actif: route == 'admin_tableau_de_bord'},
+                {route: 'admin_utilisateurs', icone: 'user', texte: 'Utilisateurs', actif: route starts with 'admin_utilisateur'},
+                {route: 'admin_agents', icone: 'user-round', texte: 'Agents immobiliers', actif: route == 'admin_agents'},
+                {route: 'admin_biens', icone: 'building-2', texte: 'Biens immobiliers', actif: route starts with 'admin_bien'},
+            ] %}
+            {% for e in entrees %}
+                <li><a class="menu__lien {{ e.actif ? 'menu__lien--actif' }}" href="{{ path(e.route) }}" title="{{ e.texte }}">
+                    <i data-lucide="{{ e.icone }}"></i><span class="menu__texte">{{ e.texte }}</span>
+                </a></li>
+            {% endfor %}
+
+            {# Paiement Mobile Money à venir (agrégateur non choisi) : entrées affichées mais inactives. #}
+            {% for e in [
+                {icone: 'credit-card', texte: 'Abonnements'},
+                {icone: 'wallet', texte: 'Paiements'},
+                {icone: 'arrow-left-right', texte: 'Transactions'},
+            ] %}
+                <li><span class="menu__lien menu__lien--bientot" title="{{ e.texte }} : bientôt disponible (paiement Mobile Money)">
+                    <i data-lucide="{{ e.icone }}"></i><span class="menu__texte">{{ e.texte }}</span><span class="menu__bientot">Bientôt</span>
+                </span></li>
+            {% endfor %}
+
+            <li class="menu__separateur"></li>
+            <li><a class="menu__lien {{ route starts with 'admin_signalement' ? 'menu__lien--actif' }}" href="{{ path('admin_signalements') }}" title="Signalements">
+                <i data-lucide="flag"></i><span class="menu__texte">Signalements</span>
+                {% if a_traiter.signalements > 0 %}<span class="menu__pastille">{{ a_traiter.signalements }}</span>{% endif %}
+            </a></li>
+            <li><a class="menu__lien {{ route starts with 'admin_verification' ? 'menu__lien--actif' }}" href="{{ path('admin_verifications') }}" title="Vérifications">
+                <i data-lucide="shield-check"></i><span class="menu__texte">Vérifications</span>
+                {% if a_traiter.verifications > 0 %}<span class="menu__pastille">{{ a_traiter.verifications }}</span>{% endif %}
+            </a></li>
+            <li><a class="menu__lien {{ route starts with 'admin_rapport' ? 'menu__lien--actif' }}" href="{{ path('admin_rapports') }}" title="Rapports">
+                <i data-lucide="chart-line"></i><span class="menu__texte">Rapports</span>
+            </a></li>
+            <li><a class="menu__lien {{ route starts with 'admin_parametres' ? 'menu__lien--actif' }}" href="{{ path('admin_parametres') }}" title="Paramètres">
+                <i data-lucide="settings"></i><span class="menu__texte">Paramètres</span>
+            </a></li>
+        </ul>
+
+        {# Silhouette de maison en filigrane, comme sur la maquette. #}
+        <svg class="barre-laterale__decor" viewBox="0 0 200 200" aria-hidden="true">
+            <path d="M100 18 L186 92 L170 92 L170 190 L30 190 L30 92 L14 92 Z" fill="none" stroke="#fff" stroke-width="10" stroke-linejoin="round"/>
+            <rect x="140" y="30" width="18" height="40" fill="#fff"/>
+            <rect x="80" y="120" width="18" height="18" fill="#fff"/><rect x="102" y="120" width="18" height="18" fill="#fff"/>
+            <rect x="80" y="142" width="18" height="18" fill="#fff"/><rect x="102" y="142" width="18" height="18" fill="#fff"/>
+        </svg>
+
+        <div class="barre-laterale__pied">
+            <div class="etat-systeme">Système en ligne</div>
+            <div class="version">LogeTogo v1.0.0</div>
+        </div>
+    </aside>
+
+    <div class="principal">
+        <header class="barre-haut">
+            <button class="bouton-icone" type="button" data-basculer-barre aria-label="Afficher ou réduire le menu"><i data-lucide="menu"></i></button>
+
+            <form class="recherche" action="{{ path('admin_recherche') }}" method="get" role="search">
+                <i data-lucide="search"></i>
+                <input type="search" name="q" value="{{ app.request.query.get('q') }}" placeholder="Rechercher un utilisateur, un bien, un agent…" autocomplete="off">
+            </form>
+
+            <div class="barre-haut__droite">
+                <div class="deroulant">
+                    <button class="bouton-icone" type="button" data-deroulant aria-label="Éléments à traiter">
+                        <i data-lucide="bell"></i>
+                        {% if total_a_traiter > 0 %}<span class="pastille-cloche">{{ total_a_traiter }}</span>{% endif %}
+                    </button>
+                    <div class="deroulant__panneau">
+                        <div class="deroulant__titre">À traiter</div>
+                        {% if total_a_traiter == 0 %}
+                            <div class="deroulant__vide">Rien en attente.</div>
+                        {% endif %}
+                        {% if a_traiter.signalements > 0 %}
+                            <a class="deroulant__element" href="{{ path('admin_signalements') }}"><i data-lucide="flag"></i>{{ a_traiter.signalements }} signalement{{ a_traiter.signalements > 1 ? 's' }} d'annonce</a>
+                        {% endif %}
+                        {% if a_traiter.verifications > 0 %}
+                            <a class="deroulant__element" href="{{ path('admin_verifications') }}"><i data-lucide="shield-check"></i>{{ a_traiter.verifications }} vérification{{ a_traiter.verifications > 1 ? 's' }} d'identité</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="deroulant">
+                    <button class="profil-admin" type="button" data-deroulant>
+                        {% if admin.avatar %}
+                            <img class="avatar" src="{{ admin.avatar }}" alt="">
+                        {% else %}
+                            <span class="avatar">{{ admin.nomComplet|initiales }}</span>
+                        {% endif %}
+                        <span class="profil-admin__texte">
+                            <span class="profil-admin__nom">{{ admin.prenom }} {{ admin.nom }}</span><br>
+                            <span class="profil-admin__role">Administrateur</span>
+                        </span>
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="deroulant__panneau">
+                        <div class="deroulant__titre">@{{ admin.identifiant }}</div>
+                        <a class="deroulant__element" href="{{ path('admin_parametres') }}"><i data-lucide="settings"></i>Paramètres</a>
+                        <a class="deroulant__element deroulant__element--danger" href="{{ path('admin_deconnexion') }}"><i data-lucide="log-out"></i>Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="contenu">
+            {% set messages = app.flashes %}
+            {% if messages is not empty %}
+                <div class="messages">
+                    {% for type, liste in messages %}
+                        {% for m in liste %}
+                            <div class="message message--{{ type }}"><i data-lucide="{{ type == 'succes' ? 'circle-check' : 'circle-alert' }}"></i>{{ m }}</div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% block contenu %}{% endblock %}
+        </main>
+    </div>
+</div>
+</body>
+</html>

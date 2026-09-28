@@ -1,0 +1,78 @@
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_macros.html.twig' as m %}
+
+{% block titre %}Paramètres{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+    <div>
+        <h1>Paramètres</h1>
+        <p>Votre compte, les administrateurs et l'état de la plateforme.</p>
+    </div>
+</div>
+
+<div class="grille grille--deux">
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="key-round"></i>Mon mot de passe</h2></div>
+        <div class="carte__corps">
+            <form class="formulaire" method="post" action="{{ path('admin_parametres_mot_de_passe') }}">
+                <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+                <label>Mot de passe actuel<input class="champ" type="password" name="actuel" autocomplete="current-password" required></label>
+                <label>Nouveau mot de passe (8 caractères au moins)<input class="champ" type="password" name="nouveau" minlength="8" autocomplete="new-password" required></label>
+                <label>Confirmation<input class="champ" type="password" name="confirmation" minlength="8" autocomplete="new-password" required></label>
+                <div><button class="bouton" type="submit"><i data-lucide="check"></i>Changer le mot de passe</button></div>
+            </form>
+        </div>
+    </section>
+
+    <section class="carte">
+        <div class="carte__entete"><h2><i data-lucide="server"></i>Plateforme</h2></div>
+        <div class="carte__corps">
+            <dl class="liste-definitions" style="grid-template-columns: 1fr auto">
+                <dt>Envoi des emails</dt>
+                <dd>{% if plateforme.emailsActifs %}<span class="pastille pastille--vert">Configuré</span>{% else %}<span class="pastille pastille--rouge">Non configuré</span>{% endif %}</dd>
+                <dt>Adresse d'envoi</dt><dd>{{ plateforme.expediteur }}</dd>
+                <dt>Paiement Mobile Money</dt><dd><span class="pastille pastille--gris">Bientôt</span></dd>
+                <dt>Environnement</dt><dd>{{ plateforme.environnement == 'prod' ? 'Production' : 'Développement' }}</dd>
+                <dt>Versions</dt><dd>PHP {{ plateforme.php }} · Symfony {{ plateforme.symfony }}</dd>
+            </dl>
+            {% if not plateforme.emailsActifs %}
+                <p class="texte-petit texte-gris" style="margin-bottom:0">Sans envoi d'emails, les codes « mot de passe oublié » et les alertes par email ne partent pas. Renseignez <code>MAILER_DSN</code> dans le fichier <code>.env.local</code> du serveur.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<section class="carte marge-haut">
+    <div class="carte__entete"><h2><i data-lucide="users"></i>Administrateurs</h2></div>
+    <div class="tableau-conteneur" style="padding-top:10px">
+        <table class="tableau">
+            <thead><tr><th>Administrateur</th><th>Email</th><th>Depuis</th><th>État</th></tr></thead>
+            <tbody>
+            {% for a in administrateurs %}
+                <tr>
+                    <td>{{ m.personne(a) }}</td>
+                    <td>{{ a.email ?? '—' }}</td>
+                    <td class="texte-gris texte-petit">{{ a.dateInscription|date('d/m/Y') }}</td>
+                    <td>{{ m.etat_compte(a) }}{% if a.id == app.user.id %} <span class="pastille pastille--bleu">Vous</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="carte__corps" style="border-top: 1px solid var(--gris-200)">
+        <h3 style="font-size:15px; margin: 6px 0 14px">Ajouter un administrateur</h3>
+        <form class="formulaire" method="post" action="{{ path('admin_parametres_ajouter_admin') }}" data-confirmer="Donner l'accès complet à l'administration à cette personne ?">
+            <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+            <div class="grille grille--deux" style="gap: 14px">
+                <label>Prénom<input class="champ" name="prenom" required></label>
+                <label>Nom<input class="champ" name="nom" required></label>
+                <label>Email (facultatif)<input class="champ" type="email" name="email"></label>
+                <label>Mot de passe provisoire (8 caractères au moins)<input class="champ" type="password" name="motDePasse" minlength="8" autocomplete="new-password" required></label>
+            </div>
+            <p class="texte-petit texte-gris" style="margin:0">L'identifiant de connexion est créé à partir du prénom et du nom (ex. kofi.mensah) et affiché après la création.</p>
+            <div><button class="bouton" type="submit"><i data-lucide="user-plus"></i>Créer l'administrateur</button></div>
+        </form>
+    </div>
+</section>
+{% endblock %}
