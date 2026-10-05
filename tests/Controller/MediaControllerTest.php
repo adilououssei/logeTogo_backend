@@ -23,7 +23,7 @@ final class MediaControllerTest extends WebTestCase
 
     protected function tearDown(): void
     {
-        (new Filesystem())->remove([...$this->fichiersTemporaires, static::getContainer()->getParameter('kernel.project_dir').'/public/uploads/annonces']);
+        (new Filesystem())->remove([...$this->fichiersTemporaires, static::getContainer()->getParameter('app.dossier_public').'/uploads/annonces']);
         parent::tearDown();
     }
 
@@ -39,7 +39,7 @@ final class MediaControllerTest extends WebTestCase
         self::assertSame('image', $reponse[0]['type']);
         self::assertSame([0, 1], array_column($reponse, 'ordre'));
         self::assertMatchesRegularExpression('#^/uploads/annonces/\d+/[0-9a-f]{24}\.png$#', $reponse[0]['url']);
-        self::assertFileExists(static::getContainer()->getParameter('kernel.project_dir').'/public'.$reponse[0]['url']);
+        self::assertFileExists(static::getContainer()->getParameter('app.dossier_public').$reponse[0]['url']);
 
         // Les photos apparaissent dans la liste publique.
         $liste = $this->requeteJson('GET', '/api/annonces');
@@ -97,7 +97,7 @@ final class MediaControllerTest extends WebTestCase
         $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);
         $annonce = $this->creerAnnonce($agent);
         $media = $this->envoyer($annonce->getId(), [$this->photo()], $this->jetonPour($agent))[0];
-        $chemin = static::getContainer()->getParameter('kernel.project_dir').'/public'.$media['url'];
+        $chemin = static::getContainer()->getParameter('app.dossier_public').$media['url'];
 
         $this->requeteJson('DELETE', \sprintf('/api/annonces/%d/medias/%d', $annonce->getId(), $media['id']), jeton: $this->jetonPour($agent));
 
@@ -111,7 +111,7 @@ final class MediaControllerTest extends WebTestCase
         $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);
         $annonce = $this->creerAnnonce($agent);
         $media = $this->envoyer($annonce->getId(), [$this->photo()], $this->jetonPour($agent))[0];
-        $chemin = static::getContainer()->getParameter('kernel.project_dir').'/public'.$media['url'];
+        $chemin = static::getContainer()->getParameter('app.dossier_public').$media['url'];
 
         $this->requeteJson('DELETE', '/api/annonces/'.$annonce->getId(), jeton: $this->jetonPour($agent));
 

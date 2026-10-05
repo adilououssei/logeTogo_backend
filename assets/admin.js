@@ -1,14 +1,19 @@
 /*
  * Interface d'administration : icônes, menu latéral, menus déroulants,
- * confirmations et graphiques (Chart.js). Aucune dépendance à Turbo ni à Stimulus.
+ * confirmations, graphiques (Chart.js) et petites animations.
+ * Aucune dépendance à Turbo ni à Stimulus.
  */
 import './styles/admin.css';
 import { createIcons, icons } from 'lucide';
 import { Chart, registerables } from 'chart.js';
 
+// Le système peut demander moins d'animations : on le respecte partout.
+const MOINS_D_ANIMATIONS = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 Chart.register(...registerables);
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 Chart.defaults.color = '#6b7489';
+Chart.defaults.animation = MOINS_D_ANIMATIONS ? false : { duration: 800, easing: 'easeOutQuart' };
 
 createIcons({ icons, attrs: { 'stroke-width': 1.8 } });
 
@@ -50,6 +55,34 @@ document.querySelectorAll('[data-afficher]').forEach((bouton) => {
     cible?.querySelector('textarea, input')?.focus();
     bouton.classList.add('cache');
   });
+});
+
+// Chiffres des indicateurs : défilent de 0 à leur valeur (« 1 250 » garde son format).
+function animerNombre(element) {
+  const texte = element.textContent.trim();
+  const cible = Number(texte.replace(/[\s\u202f\u00a0]/g, ''));
+  if (!Number.isFinite(cible) || cible <= 0) return;
+  const format = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const duree = 900;
+  const debut = performance.now();
+  const etape = (maintenant) => {
+    const t = Math.min(1, (maintenant - debut) / duree);
+    const ralenti = 1 - (1 - t) ** 3; // démarre vite, se pose en douceur
+    element.textContent = format(Math.round(cible * ralenti));
+    if (t < 1) requestAnimationFrame(etape);
+    else element.textContent = texte;
+  };
+  element.textContent = '0';
+  requestAnimationFrame(etape);
+}
+if (!MOINS_D_ANIMATIONS) document.querySelectorAll('.indicateur__valeur').forEach(animerNombre);
+
+// Messages de confirmation (vert) : disparaissent seuls après quelques secondes. Les erreurs restent.
+document.querySelectorAll('.message--succes').forEach((message) => {
+  setTimeout(() => {
+    message.classList.add('message--masque');
+    setTimeout(() => message.remove(), MOINS_D_ANIMATIONS ? 0 : 400);
+  }, 6000);
 });
 
 // Graphiques : <canvas data-graphique='{"type": "ligne", ...}'>

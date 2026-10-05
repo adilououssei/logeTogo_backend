@@ -21,6 +21,7 @@ class GestionAnnonces
         private readonly ValidatorInterface $validateur,
         private readonly StockageMedias $stockageMedias,
         private readonly Notificateur $notificateur,
+        private readonly ReferentielQuartiers $quartiers,
     ) {
     }
 
@@ -31,6 +32,7 @@ class GestionAnnonces
         $auteur->addAnnonce($annonce);
 
         $this->valider($annonce);
+        $this->quartierOfficiel($annonce, $auteur);
         $this->em->persist($annonce);
         $this->em->flush();
 
@@ -44,6 +46,7 @@ class GestionAnnonces
     {
         $this->remplir($annonce, $donnees);
         $this->valider($annonce);
+        $this->quartierOfficiel($annonce, $annonce->getPubliePar());
         $this->em->flush();
 
         return $annonce;
@@ -108,6 +111,16 @@ class GestionAnnonces
         $annonce->getContact()
             ->setTelephone(null !== $d->telephoneContact ? trim($d->telephoneContact) : null)
             ->setWhatsapp(null !== $d->whatsappContact ? trim($d->whatsappContact) : null);
+    }
+
+    /**
+     * Quartier écrit comme dans la liste (« agoe assiyeye » → « Agoè Assiyéyé ») ;
+     * un quartier absent de la liste y est ajouté, pour être reconnu et proposé ensuite.
+     */
+    private function quartierOfficiel(Annonce $annonce, ?Utilisateur $agent): void
+    {
+        $lieu = $annonce->getLocalisation();
+        $lieu->setQuartier($this->quartiers->nomOfficielOuAjout((string) $lieu->getQuartier(), (string) $lieu->getVille(), $lieu->getRegion(), $agent));
     }
 
     private function valider(Annonce $annonce): void

@@ -30,7 +30,7 @@ class Messagerie
         private readonly ConversationRepository $conversations,
         private readonly ValidatorInterface $validateur,
         private readonly Notificateur $notificateur,
-        #[Autowire('%kernel.project_dir%/public')]
+        #[Autowire('%app.dossier_public%')]
         private readonly string $dossierPublic,
     ) {
     }

@@ -31,7 +31,7 @@ class StockageMedias
         private readonly EntityManagerInterface $em,
         private readonly ValidatorInterface $validateur,
         private readonly Filesystem $systemeFichiers,
-        #[Autowire('%kernel.project_dir%/public')]
+        #[Autowire('%app.dossier_public%')]
         private readonly string $dossierPublic,
     ) {
     }

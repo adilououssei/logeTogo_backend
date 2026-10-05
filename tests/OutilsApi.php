@@ -20,7 +20,7 @@ trait OutilsApi
     private function viderBase(): void
     {
         $connexion = $this->em()->getConnection();
-        foreach (['signalement', 'demande_verification', 'code_reinitialisation', 'media', 'favori', 'avis', 'notification', 'message', 'conversation', 'annonce', 'jeton_renouvellement', 'utilisateur'] as $table) {
+        foreach (['signalement', 'demande_verification', 'code_reinitialisation', 'media', 'favori', 'avis', 'notification', 'message', 'conversation', 'annonce', 'jeton_renouvellement', 'quartier_ajoute', 'utilisateur'] as $table) {
             $connexion->executeStatement("DELETE FROM $table");
         }
         // Compteurs de tentatives de connexion : chaque test repart de zéro.

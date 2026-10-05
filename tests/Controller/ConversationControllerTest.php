@@ -21,7 +21,7 @@ final class ConversationControllerTest extends WebTestCase
 
     protected function tearDown(): void
     {
-        (new Filesystem())->remove(static::getContainer()->getParameter('kernel.project_dir').'/public/uploads/messages');
+        (new Filesystem())->remove(static::getContainer()->getParameter('app.dossier_public').'/uploads/messages');
         parent::tearDown();
     }
 
@@ -167,7 +167,7 @@ final class ConversationControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
         self::assertSame('image', $message['type']);
         self::assertSame('Ma pièce d\'identité', $message['contenu']);
-        self::assertFileExists(static::getContainer()->getParameter('kernel.project_dir').'/public'.$message['urlFichier']);
+        self::assertFileExists(static::getContainer()->getParameter('app.dossier_public').$message['urlFichier']);
 
         // Un fichier qui n'est pas une image est refusé.
         $faux = tempnam(sys_get_temp_dir(), 'faux');

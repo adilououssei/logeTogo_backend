@@ -27,7 +27,7 @@ class GestionProfil
         private readonly UserPasswordHasherInterface $hacheur,
         private readonly JetonRenouvellementRepository $jetonsRenouvellement,
         private readonly Filesystem $systemeFichiers,
-        #[Autowire('%kernel.project_dir%/public')]
+        #[Autowire('%app.dossier_public%')]
         private readonly string $dossierPublic,
     ) {
     }

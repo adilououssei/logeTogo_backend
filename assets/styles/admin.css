@@ -548,3 +548,91 @@ form.en-ligne { margin: 0; }
   .contenu { padding: 16px; }
   .repartition { flex-direction: column; }
 }
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+/* Légères et courtes : elles accompagnent la navigation sans la ralentir.
+   Toutes désactivées si le système demande de réduire les animations (voir plus bas). */
+
+:root {
+  --sortie-douce: cubic-bezier(0.22, 1, 0.36, 1);
+  --duree-apparition: 0.42s;
+}
+
+/* Changement de page : fondu du contenu ; le menu latéral et la barre du haut restent en place.
+   (Navigateurs récents ; ailleurs, la page s'affiche simplement.) */
+@view-transition { navigation: auto; }
+.barre-laterale { view-transition-name: barre-laterale; }
+.barre-haut { view-transition-name: barre-haut; }
+::view-transition-old(root) { animation: 0.14s ease-in both disparition; }
+::view-transition-new(root) { animation: 0.26s var(--sortie-douce) both apparition-legere; }
+
+@keyframes disparition { to { opacity: 0; } }
+@keyframes apparition-legere { from { opacity: 0; transform: translateY(6px); } }
+@keyframes apparition { from { opacity: 0; transform: translateY(12px); } }
+@keyframes fondu { from { opacity: 0; } }
+@keyframes deroulant { from { opacity: 0; transform: translateY(-6px) scale(0.98); } }
+@keyframes message-entree { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes pastille { 0% { transform: scale(0.4); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* Contenu de la page : les blocs montent légèrement l'un après l'autre. */
+.contenu > *:not(.grille),
+.grille > * {
+  animation: apparition var(--duree-apparition) var(--sortie-douce) both;
+}
+.contenu > :nth-child(2):not(.grille), .grille > :nth-child(2) { animation-delay: 0.05s; }
+.contenu > :nth-child(3):not(.grille), .grille > :nth-child(3) { animation-delay: 0.1s; }
+.contenu > :nth-child(4):not(.grille), .grille > :nth-child(4) { animation-delay: 0.15s; }
+.contenu > :nth-child(n+5):not(.grille), .grille > :nth-child(n+5) { animation-delay: 0.2s; }
+
+/* Lignes des tableaux : apparition en cascade (rapide, plafonnée à la 12e ligne). */
+.tableau tbody tr { animation: fondu 0.3s ease-out both; }
+.tableau tbody tr:nth-child(2) { animation-delay: 0.03s; }
+.tableau tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.tableau tbody tr:nth-child(4) { animation-delay: 0.09s; }
+.tableau tbody tr:nth-child(5) { animation-delay: 0.12s; }
+.tableau tbody tr:nth-child(6) { animation-delay: 0.15s; }
+.tableau tbody tr:nth-child(7) { animation-delay: 0.18s; }
+.tableau tbody tr:nth-child(8) { animation-delay: 0.21s; }
+.tableau tbody tr:nth-child(9) { animation-delay: 0.24s; }
+.tableau tbody tr:nth-child(10) { animation-delay: 0.27s; }
+.tableau tbody tr:nth-child(11) { animation-delay: 0.3s; }
+.tableau tbody tr:nth-child(n+12) { animation-delay: 0.33s; }
+.tableau td { transition: background-color 0.15s ease; }
+
+/* Survol : les éléments cliquables réagissent en douceur. */
+.carte { transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s var(--sortie-douce); }
+a.carte:hover, .indicateur:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(16, 33, 72, 0.05), 0 12px 28px rgba(16, 33, 72, 0.1); }
+.indicateur__icone { transition: transform 0.25s var(--sortie-douce); }
+.indicateur:hover .indicateur__icone { transform: scale(1.08) rotate(-4deg); }
+.action-rapide { transition: transform 0.2s var(--sortie-douce), filter 0.2s ease, box-shadow 0.2s ease; }
+.action-rapide:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(16, 33, 72, 0.16); }
+.action-rapide:active { transform: translateY(0) scale(0.97); }
+.action-rapide svg.lucide { transition: transform 0.25s var(--sortie-douce); }
+.action-rapide:hover svg.lucide { transform: scale(1.12); }
+.bouton, .bouton-icone, .profil-admin, .deroulant__element, .onglet, .personne, .lien-voir {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+}
+.bouton:active, .bouton-icone:active { transform: scale(0.96); }
+.lien-voir svg.lucide { transition: transform 0.2s var(--sortie-douce); }
+.lien-voir:hover svg.lucide { transform: translateX(3px); }
+.onglet--actif { animation: fondu 0.25s ease-out; }
+
+/* Menu latéral : fond qui apparaît, icône qui glisse un peu au survol. */
+.menu__lien { transition: background-color 0.18s ease, color 0.18s ease; }
+.menu__lien svg.lucide { transition: transform 0.2s var(--sortie-douce); }
+.menu__lien:not(.menu__lien--bientot):hover svg.lucide { transform: translateX(3px); }
+.menu__pastille, .pastille-cloche { animation: pastille 0.45s var(--sortie-douce) 0.3s both; }
+
+/* Menus déroulants (cloche, profil) et messages de confirmation. */
+.deroulant--ouvert .deroulant__panneau { animation: deroulant 0.16s var(--sortie-douce); transform-origin: top right; }
+.message { animation: message-entree 0.35s var(--sortie-douce) both; transition: opacity 0.4s ease, transform 0.4s ease; }
+.message--masque { opacity: 0; transform: translateY(-8px); }
+.champ { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+
+/* Page de connexion : la carte apparaît en montant. */
+.carte-connexion { animation: apparition 0.5s var(--sortie-douce) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  @view-transition { navigation: none; }
+}

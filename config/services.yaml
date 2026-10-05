@@ -7,6 +7,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # Racine des fichiers envoyés (photos, vidéos, avatars, pièces jointes) : <dossier>/uploads/…
+    app.dossier_public: '%kernel.project_dir%/public'
 
 services:
     # default configuration for services in *this* file
@@ -23,6 +25,10 @@ services:
     # please note that last definitions always *replace* previous ones
 
 when@test:
+    parameters:
+        # Les tests écrivent (et effacent) leurs fichiers ici, jamais dans public/uploads.
+        app.dossier_public: '%kernel.project_dir%/var/test_public'
+
     services:
         # Faux serveur Expo : les tests vérifient les notifications push « envoyées ».
         App\Tests\ServeurExpoSimule:

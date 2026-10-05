@@ -19,6 +19,11 @@ framework:
             policy: sliding_window
             limit: 20
             interval: '15 minutes'
+        # Annonces vocales : 30 par jour et par agent (temps de calcul de l'IA).
+        annonce_vocale:
+            policy: fixed_window
+            limit: 30
+            interval: '1 day'
 
     http_client:
         scoped_clients:

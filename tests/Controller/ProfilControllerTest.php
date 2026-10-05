@@ -19,7 +19,7 @@ final class ProfilControllerTest extends WebTestCase
 
     protected function tearDown(): void
     {
-        (new Filesystem())->remove(static::getContainer()->getParameter('kernel.project_dir').'/public/uploads/avatars');
+        (new Filesystem())->remove(static::getContainer()->getParameter('app.dossier_public').'/uploads/avatars');
         parent::tearDown();
     }
 
@@ -90,7 +90,7 @@ final class ProfilControllerTest extends WebTestCase
     public function testPhotoDeProfil(): void
     {
         $session = $this->inscrire();
-        $racine = static::getContainer()->getParameter('kernel.project_dir').'/public';
+        $racine = static::getContainer()->getParameter('app.dossier_public');
 
         $profil = $this->envoyerPhoto($session['token']);
         self::assertResponseIsSuccessful();
