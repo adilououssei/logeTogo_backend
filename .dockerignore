@@ -1,0 +1,26 @@
+# Git et éditeurs
+.git
+.vscode
+.idea
+
+# Généré sur la machine : reconstruit dans l'image
+vendor
+var
+public/assets
+assets/vendor
+
+# Données des utilisateurs : jamais dans l'image (elles vivront dans un volume)
+public/uploads
+
+# Secrets : jamais dans l'image
+.env.local
+.env.*.local
+config/jwt/*.pem
+
+# Tests : inutiles en production
+tests
+.phpunit.cache
+phpunit.xml
+.env.test
+
+JWT_PASSPHRASE=ac82dd304b1122a7c4e19d20f6a720c7fa293793bedce260e8f2574ac03236a3

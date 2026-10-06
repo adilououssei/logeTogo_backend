@@ -1,25 +1,56 @@
+name: logetogo
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+  mysql:
+    image: mysql:8.0
+    env_file: .env.docker.local
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - mysql_data:/var/lib/mysql      # les données survivent à l'arrêt des conteneurs
+    healthcheck:                       # « prêt » seulement quand MySQL répond vraiment
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      retries: 30
+
+  php:
+    build:
+      context: .
+      target: php                      # l'étape « php » du Dockerfile
+    env_file: .env.docker.local
+    environment:                       # réglages sans secret, identiques partout
+      WHISPER_URL: http://whisper:8080/inference   # le conteneur « whisper », par son nom
+      FFMPEG_CHEMIN: /usr/bin/ffmpeg
+      ANNONCE_VOCALE_IA: aucune        # règles seules (pas d'Ollama dans Docker pour l'instant)
+    volumes:
+      - ./config/jwt:/var/www/html/config/jwt:ro       # clés JWT (secrets), en lecture seule
+      - uploads:/var/www/html/public/uploads            # photos et vidéos des annonces
+      - verifications:/var/www/html/var/verifications   # pièces d'identité (jamais publiques)
+    depends_on:
+      mysql:
+        condition: service_healthy     # attend que MySQL soit prêt
+
+  web:
+    build:
+      context: .
+      target: web                      # l'étape « web » (Nginx)
+    volumes:
+      - uploads:/var/www/html/public/uploads:ro         # Nginx sert les photos (lecture seule)
+    depends_on:
+      - php
+    ports:
+      - "8100:80"                      # http://localhost:8100 → port 80 du conteneur
+
+  whisper:
+    build:
+      context: .
+      target: whisper                  # l'étape « whisper » du Dockerfile
+    environment:
+      WHISPER_THREADS: "2"             # 2 processeurs : on en laisse pour le reste du serveur
+    volumes:
+      - whisper_modeles:/modeles       # modèles téléchargés une seule fois
+    # Pas de « ports » : seul le conteneur PHP lui parle, par le réseau privé de Compose.
 
 volumes:
-###> doctrine/doctrine-bundle ###
-  database_data:
-###< doctrine/doctrine-bundle ###
+  mysql_data:
+  uploads:
+  verifications:
+  whisper_modeles:
