@@ -142,6 +142,19 @@ class Annonce
     #[Groups(['annonce:detail'])]
     private ?\DateTimeImmutable $dateModification = null;
 
+    /**
+     * Dernière fois que l'annonceur a confirmé que le bien est disponible (publication,
+     * modification, « Toujours disponible »). Affichée aux visiteurs comme gage de fraîcheur.
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['annonce:liste', 'annonce:detail'])]
+    private ?\DateTimeImmutable $dateConfirmation = null;
+
+    /** Rappel « Toujours disponible ? » envoyé et resté sans réponse (null : aucun rappel en cours). */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['annonce:annonceur'])]
+    private ?\DateTimeImmutable $dateRappelDisponibilite = null;
+
     public function __construct()
     {
         $this->localisation = new Localisation();
@@ -154,6 +167,41 @@ class Annonce
     public function initialiserDatePublication(): void
     {
         $this->datePublication ??= new \DateTimeImmutable();
+        $this->dateConfirmation ??= $this->datePublication;
+    }
+
+    /** L'annonceur confirme que le bien est disponible : il revient en ligne et le délai repart de zéro. */
+    public function confirmerDisponibilite(): static
+    {
+        $this->statut = StatutAnnonce::DISPONIBLE;
+        $this->dateConfirmation = new \DateTimeImmutable();
+        $this->dateRappelDisponibilite = null;
+
+        return $this;
+    }
+
+    public function getDateConfirmation(): ?\DateTimeImmutable
+    {
+        return $this->dateConfirmation;
+    }
+
+    public function getDateRappelDisponibilite(): ?\DateTimeImmutable
+    {
+        return $this->dateRappelDisponibilite;
+    }
+
+    public function setDateRappelDisponibilite(?\DateTimeImmutable $date): static
+    {
+        $this->dateRappelDisponibilite = $date;
+
+        return $this;
+    }
+
+    /** Un rappel attend une réponse de l'annonceur (affiché en évidence dans son tableau de bord). */
+    #[Groups(['annonce:annonceur'])]
+    public function isRappelEnAttente(): bool
+    {
+        return null !== $this->dateRappelDisponibilite && StatutAnnonce::DISPONIBLE === $this->statut;
     }
 
     #[ORM\PreUpdate]

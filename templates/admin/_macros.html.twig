@@ -19,7 +19,7 @@
 {% endmacro %}
 
 {% macro statut_annonce(statut) %}
-    {% set couleurs = {disponible: 'vert', occupe: 'jaune', vendu: 'bleu', suspendu: 'rouge'} %}
+    {% set couleurs = {disponible: 'vert', occupe: 'jaune', vendu: 'bleu', a_confirmer: 'gris', suspendu: 'rouge'} %}
     <span class="pastille pastille--{{ couleurs[statut.value] }}">{{ statut.libelle }}</span>
 {% endmacro %}
 

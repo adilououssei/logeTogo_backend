@@ -22,6 +22,7 @@ class TableauBordController extends AbstractController
 
         return $this->render('admin/tableau_de_bord.html.twig', [
             'indicateurs' => $statistiques->indicateurs(),
+            'aConfirmer' => $statistiques->annoncesAConfirmer(),
             'evolution' => $statistiques->evolutionAnnonces(6),
             'repartition' => $statistiques->repartitionTypes(),
             'activite' => $statistiques->activiteRecente(6),

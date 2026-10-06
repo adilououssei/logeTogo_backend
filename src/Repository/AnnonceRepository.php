@@ -33,7 +33,7 @@ class AnnonceRepository extends ServiceEntityRepository
             ->leftJoin('a.medias', 'm')
             ->join('a.publiePar', 'p')
             ->andWhere('a.statut = :statut')
-            ->setParameter('statut', $filtres->statut ?? StatutAnnonce::DISPONIBLE);
+            ->setParameter('statut', StatutAnnonce::DISPONIBLE);
 
         if (null !== $filtres->recherche && '' !== trim($filtres->recherche)) {
             $qb->andWhere('a.titre LIKE :texte OR a.localisation.ville LIKE :texte OR a.localisation.quartier LIKE :texte')
@@ -85,6 +85,40 @@ class AnnonceRepository extends ServiceEntityRepository
             ->setParameter('annonceur', $annonceur)
             ->orderBy('a.datePublication', 'DESC')
             ->addOrderBy('a.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Annonces en ligne dont la disponibilité n'a pas été confirmée depuis la date donnée
+     * et pour lesquelles aucun rappel n'est en cours.
+     *
+     * @return list<Annonce>
+     */
+    public function sansConfirmationDepuis(\DateTimeImmutable $limite): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.statut = :disponible')
+            ->andWhere('a.dateRappelDisponibilite IS NULL')
+            ->andWhere('a.dateConfirmation <= :limite')
+            ->setParameter('disponible', StatutAnnonce::DISPONIBLE)
+            ->setParameter('limite', $limite)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Annonces en ligne dont le rappel « toujours disponible ? » est resté sans réponse depuis la date donnée.
+     *
+     * @return list<Annonce>
+     */
+    public function rappelSansReponseDepuis(\DateTimeImmutable $limite): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.statut = :disponible')
+            ->andWhere('a.dateRappelDisponibilite <= :limite')
+            ->setParameter('disponible', StatutAnnonce::DISPONIBLE)
+            ->setParameter('limite', $limite)
             ->getQuery()
             ->getResult();
     }

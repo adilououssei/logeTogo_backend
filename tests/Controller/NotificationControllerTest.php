@@ -30,7 +30,10 @@ final class NotificationControllerTest extends WebTestCase
 
         $conversation = $this->requeteJson('POST', '/api/conversations', ['annonceId' => $annonce->getId()], $jetonLocataire);
         $this->requeteJson('POST', '/api/conversations/'.$conversation['id'].'/messages', ['contenu' => 'Bonjour !'], $jetonLocataire);
+        self::assertEmailCount(1, message: 'premier message non lu : un email');
+        self::assertEmailTextBodyContains(self::getMailerMessage(), 'Bonjour !');
         $this->requeteJson('POST', '/api/conversations/'.$conversation['id'].'/messages', ['contenu' => 'Toujours libre ?'], $jetonLocataire);
+        self::assertEmailCount(0, message: 'pas un email par message tant que la conversation n\'est pas lue');
 
         // Deux messages → une seule notification, mise à jour avec le dernier.
         $notifications = $this->requeteJson('GET', '/api/notifications', jeton: $jetonAgent);
@@ -45,6 +48,11 @@ final class NotificationControllerTest extends WebTestCase
         self::assertCount(2, ServeurExpoSimule::$envois);
         self::assertSame('ExponentPushToken[agent]', ServeurExpoSimule::$envois[1]['to']);
         self::assertSame(['type' => 'message', 'idConversation' => $conversation['id']], ServeurExpoSimule::$envois[1]['data']);
+        // Comme WhatsApp : le nom de l'expéditeur en titre, en bandeau prioritaire (canal « messages »).
+        self::assertSame(['Ama Koffi', 'Toujours libre ?', 'messages', 'high'], [
+            ServeurExpoSimule::$envois[1]['title'], ServeurExpoSimule::$envois[1]['body'],
+            ServeurExpoSimule::$envois[1]['channelId'], ServeurExpoSimule::$envois[1]['priority'],
+        ]);
 
         // L'expéditeur n'est pas notifié de ses propres messages.
         self::assertSame([], $this->requeteJson('GET', '/api/notifications', jeton: $jetonLocataire));
@@ -54,7 +62,7 @@ final class NotificationControllerTest extends WebTestCase
         self::assertSame(['total' => 0], $this->requeteJson('GET', '/api/notifications/non-lues', jeton: $jetonAgent));
     }
 
-    public function testNouvelleAnnonceCorrespondantAUneAlerte(): void
+    public function testNouvelleAnnonceEnvoyeeATousPourVousSiUneAlerteCorrespond(): void
     {
         $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);
         $jetonAma = $this->jetonPour($this->creerUtilisateur('ama.koffi'));
@@ -72,14 +80,20 @@ final class NotificationControllerTest extends WebTestCase
         $notificationsAma = $this->requeteJson('GET', '/api/notifications', jeton: $jetonAma);
         self::assertCount(1, $notificationsAma);
         self::assertSame('nouvelle_annonce', $notificationsAma[0]['type']);
+        self::assertSame('Nouvelle annonce pour vous', $notificationsAma[0]['titre'], 'son alerte correspond');
         self::assertStringContainsString('Chambre à Bè', $notificationsAma[0]['contenu']);
         self::assertNotNull($notificationsAma[0]['idAnnonce']);
-        self::assertSame([], $this->requeteJson('GET', '/api/notifications', jeton: $jetonEdem));
         self::assertSame('nouvelle_annonce', ServeurExpoSimule::$envois[0]['data']['type']);
+        self::assertSame('annonces', ServeurExpoSimule::$envois[0]['channelId']);
 
-        // Trop chère pour l'alerte d'Ama : pas de nouvelle notification.
+        // Edem n'a pas d'alerte qui correspond : il est quand même prévenu.
+        self::assertSame(['Nouvelle annonce sur LogeTogo'], array_column($this->requeteJson('GET', '/api/notifications', jeton: $jetonEdem), 'titre'));
+        // L'auteur ne reçoit rien pour sa propre annonce.
+        self::assertSame([], $this->requeteJson('GET', '/api/notifications', jeton: $this->jetonPour($agent)));
+
+        // Trop chère pour l'alerte d'Ama : elle est prévenue, mais sans « pour vous ».
         $this->requeteJson('POST', '/api/annonces', $this->chambre(80000), $this->jetonPour($agent));
-        self::assertCount(1, $this->requeteJson('GET', '/api/notifications', jeton: $jetonAma));
+        self::assertSame(['Nouvelle annonce sur LogeTogo', 'Nouvelle annonce pour vous'], array_column($this->requeteJson('GET', '/api/notifications', jeton: $jetonAma), 'titre'));
     }
 
     public function testAlerteAussiParEmailSaufSiDesactive(): void

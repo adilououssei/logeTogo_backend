@@ -28,8 +28,10 @@ class EnvoiPush
     /**
      * @param list<Utilisateur>    $destinataires
      * @param array<string, mixed> $donnees        transmises à l'application (ce qu'il faut ouvrir au toucher)
+     * @param string               $canal          canal Android créé par l'application : « messages » (bandeau
+     *                                             en haut de l'écran, comme WhatsApp), « annonces » ou « defaut »
      */
-    public function envoyer(array $destinataires, string $titre, string $corps, array $donnees = []): void
+    public function envoyer(array $destinataires, string $titre, string $corps, array $donnees = [], string $canal = 'defaut'): void
     {
         $jetons = array_map(fn ($a) => $a->getJetonPush(), $this->appareils->trouverPourUtilisateurs($destinataires));
         if ([] === $jetons) {
@@ -44,7 +46,9 @@ class EnvoiPush
                 'body' => mb_strimwidth($corps, 0, 180, '…'),
                 'data' => $donnees,
                 'sound' => 'default',
-                'channelId' => 'defaut',
+                'channelId' => $canal,
+                // Livrée tout de suite, même téléphone en veille.
+                'priority' => 'high',
             ], $lot);
 
             try {

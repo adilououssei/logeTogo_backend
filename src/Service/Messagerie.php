@@ -6,6 +6,7 @@ use App\Entity\Annonce;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Utilisateur;
+use App\Enum\StatutAnnonce;
 use App\Enum\TypeMessage;
 use App\Repository\ConversationRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -49,6 +50,9 @@ class Messagerie
         $existante = $this->conversations->trouverExistante($annonce, $demandeur);
         if (null !== $existante) {
             return [$existante, false];
+        }
+        if (StatutAnnonce::DISPONIBLE !== $annonce->getStatut()) {
+            throw $this->erreur('annonceId', 'Ce bien n\'est plus disponible.');
         }
 
         $conversation = (new Conversation())

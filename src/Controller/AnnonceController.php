@@ -10,6 +10,7 @@ use App\Entity\Utilisateur;
 use App\Repository\AnnonceRepository;
 use App\Security\Voter\AnnonceVoter;
 use App\Service\GestionAnnonces;
+use App\Service\SuiviDisponibilite;
 use App\Service\Notation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,10 +35,12 @@ class AnnonceController extends AbstractController
     private const GROUPES_LISTE = ['annonce:liste', 'annonceur:public'];
     private const GROUPES_DETAIL = ['annonce:detail', 'annonceur:public'];
     private const GROUPES_PRIVES = ['annonce:prive', 'annonceur:prive'];
+    /** Réservé à l'auteur de l'annonce : rappels de disponibilité. */
+    private const GROUPE_ANNONCEUR = 'annonce:annonceur';
 
     /**
      * Liste paginée : {"elements": [...], "total": 42, "page": 1, "parPage": 20, "pages": 3}.
-     * Filtres : recherche, region, quartier, typeBien, typeTransaction, prixMin, prixMax, statut, regionPrioritaire, page, parPage.
+     * Biens disponibles uniquement. Filtres : recherche, region, quartier, typeBien, typeTransaction, prixMin, prixMax, regionPrioritaire, page, parPage.
      */
     #[Route('', name: 'liste', methods: ['GET'])]
     public function liste(
@@ -69,7 +72,7 @@ class AnnonceController extends AbstractController
 
         return $this->json(
             $liste,
-            context: ['groups' => [...self::GROUPES_DETAIL, ...self::GROUPES_PRIVES]],
+            context: ['groups' => [...self::GROUPES_DETAIL, ...self::GROUPES_PRIVES, self::GROUPE_ANNONCEUR]],
         );
     }
 
@@ -84,7 +87,7 @@ class AnnonceController extends AbstractController
         }
         $notation->completer([$annonce]);
 
-        return $this->json($annonce, context: ['groups' => $this->groupesDetail($utilisateur)]);
+        return $this->json($annonce, context: ['groups' => $this->groupesDetail($utilisateur, $annonce)]);
     }
 
     /** Publie une annonce (201). Les photos et vidéos s'ajoutent ensuite via /api/annonces/{id}/medias. */
@@ -97,7 +100,7 @@ class AnnonceController extends AbstractController
     ): JsonResponse {
         $annonce = $gestion->publier($donnees, $utilisateur);
 
-        return $this->json($annonce, Response::HTTP_CREATED, context: ['groups' => $this->groupesDetail($utilisateur)]);
+        return $this->json($annonce, Response::HTTP_CREATED, context: ['groups' => $this->groupesDetail($utilisateur, $annonce)]);
     }
 
     /** Remplace le contenu de l'annonce (auteur ou administrateur). */
@@ -109,10 +112,26 @@ class AnnonceController extends AbstractController
         #[CurrentUser] Utilisateur $utilisateur,
         GestionAnnonces $gestion,
     ): JsonResponse {
-        return $this->json($gestion->modifier($annonce, $donnees), context: ['groups' => $this->groupesDetail($utilisateur)]);
+        return $this->json($gestion->modifier($annonce, $donnees), context: ['groups' => $this->groupesDetail($utilisateur, $annonce)]);
     }
 
-    /** {"statut": "disponible" | "occupe" | "vendu"} — « suspendu » est réservé aux administrateurs. */
+    /**
+     * L'annonceur confirme que son bien est toujours disponible : il reste (ou revient) en ligne
+     * et le prochain rappel n'aura lieu que dans 7 jours.
+     */
+    #[Route('/{id}/confirmer-disponibilite', name: 'confirmer_disponibilite', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted(AnnonceVoter::MODIFIER, subject: 'annonce', message: 'Vous ne pouvez confirmer que vos propres annonces.')]
+    public function confirmerDisponibilite(Annonce $annonce, #[CurrentUser] Utilisateur $utilisateur, SuiviDisponibilite $suivi): JsonResponse
+    {
+        $suivi->confirmer($annonce);
+
+        return $this->json($annonce, context: ['groups' => $this->groupesDetail($utilisateur, $annonce)]);
+    }
+
+    /**
+     * {"statut": "disponible" | "occupe" | "vendu"} — « suspendu » est réservé aux administrateurs,
+     * « a_confirmer » est attribué automatiquement. Repasser en « disponible » vaut confirmation.
+     */
     #[Route('/{id}/statut', name: 'statut', requirements: ['id' => '\d+'], methods: ['PATCH'])]
     #[IsGranted(AnnonceVoter::MODIFIER, subject: 'annonce', message: 'Vous ne pouvez modifier que vos propres annonces.')]
     public function changerStatut(
@@ -123,7 +142,7 @@ class AnnonceController extends AbstractController
     ): JsonResponse {
         $gestion->changerStatut($annonce, $donnees->statut, $utilisateur);
 
-        return $this->json($annonce, context: ['groups' => $this->groupesDetail($utilisateur)]);
+        return $this->json($annonce, context: ['groups' => $this->groupesDetail($utilisateur, $annonce)]);
     }
 
     /** Supprime l'annonce, ses photos et vidéos (204). */
@@ -137,8 +156,13 @@ class AnnonceController extends AbstractController
     }
 
     /** @return list<string> */
-    private function groupesDetail(?Utilisateur $utilisateur): array
+    private function groupesDetail(?Utilisateur $utilisateur, Annonce $annonce): array
     {
-        return null !== $utilisateur ? [...self::GROUPES_DETAIL, ...self::GROUPES_PRIVES] : self::GROUPES_DETAIL;
+        if (null === $utilisateur) {
+            return self::GROUPES_DETAIL;
+        }
+        $groupes = [...self::GROUPES_DETAIL, ...self::GROUPES_PRIVES];
+
+        return $annonce->getPubliePar() === $utilisateur ? [...$groupes, self::GROUPE_ANNONCEUR] : $groupes;
     }
 }

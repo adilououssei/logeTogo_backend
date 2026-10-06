@@ -39,7 +39,8 @@ class UtilisateurController extends AbstractController
         $ids = array_map(fn (Utilisateur $u) => $u->getId(), $donnees['utilisateurs']);
         $donnees['activite'] = [] === $ids ? [] : array_column($em->getConnection()->fetchAllAssociative(
             'SELECT publie_par_id AS id, COUNT(*) AS annonces, COALESCE(SUM(nombre_vues), 0) AS vues,
-                    SUM(statut = \'disponible\') AS disponibles
+                    SUM(statut = \'disponible\') AS disponibles,
+                    SUM(statut = \'a_confirmer\' OR (statut = \'disponible\' AND date_rappel_disponibilite IS NOT NULL)) AS sans_reponse
              FROM annonce WHERE publie_par_id IN (?) GROUP BY publie_par_id',
             [$ids],
             [\Doctrine\DBAL\ArrayParameterType::INTEGER],

@@ -7,6 +7,7 @@ use App\Entity\Annonce;
 use App\Entity\Notification;
 use App\Entity\Signalement;
 use App\Entity\Utilisateur;
+use App\Enum\MotifSignalement;
 use App\Enum\StatutAnnonce;
 use App\Enum\TypeNotification;
 use App\Repository\SignalementRepository;
@@ -26,6 +27,7 @@ class Moderation
         private readonly SignalementRepository $signalements,
         private readonly GestionAnnonces $gestionAnnonces,
         private readonly EnvoiPush $push,
+        private readonly SuiviDisponibilite $suiviDisponibilite,
     ) {
     }
 
@@ -42,6 +44,10 @@ class Moderation
         $signalement = new Signalement($annonce, $auteur, $donnees->motif, '' !== $commentaire ? $commentaire : null);
         $this->em->persist($signalement);
         $this->em->flush();
+
+        if (MotifSignalement::DEJA_LOUE === $donnees->motif) {
+            $this->suiviDisponibilite->signaleDejaLoue($annonce);
+        }
 
         return $signalement;
     }

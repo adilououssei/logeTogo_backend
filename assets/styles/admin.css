@@ -56,7 +56,7 @@ svg.lucide { width: 18px; height: 18px; flex-shrink: 0; }
   width: var(--largeur-barre);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, var(--bleu-nuit) 0%, var(--bleu-nuit-fonce) 100%);
+  background: var(--bleu-nuit);
   color: var(--blanc);
   overflow: hidden;
   z-index: 30;
@@ -507,7 +507,7 @@ form.en-ligne { margin: 0; }
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: radial-gradient(circle at 20% 20%, #1d4fae 0%, var(--bleu-nuit) 45%, var(--bleu-nuit-fonce) 100%);
+  background: var(--bleu-nuit);
 }
 .carte-connexion { width: 100%; max-width: 410px; padding: 34px 32px; background: var(--blanc); border-radius: 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25); }
 .carte-connexion img { display: block; width: 150px; margin: 0 auto 6px; }

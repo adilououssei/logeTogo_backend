@@ -40,18 +40,17 @@ final class AnnonceControllerTest extends WebTestCase
         self::assertArrayNotHasKey('contact', $annonce);
     }
 
-    public function testListeNeMontreQueLesAnnoncesDisponiblesParDefaut(): void
+    public function testListeNeMontreQueLesAnnoncesDisponibles(): void
     {
         $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);
         $this->creerAnnonce($agent, ['titre' => 'Disponible']);
-        $this->creerAnnonce($agent, ['titre' => 'Occupée', 'statut' => StatutAnnonce::OCCUPE]);
-        $this->creerAnnonce($agent, ['titre' => 'Suspendue', 'statut' => StatutAnnonce::SUSPENDU]);
+        foreach ([StatutAnnonce::OCCUPE, StatutAnnonce::VENDU, StatutAnnonce::A_CONFIRMER, StatutAnnonce::SUSPENDU] as $statut) {
+            $this->creerAnnonce($agent, ['titre' => $statut->value, 'statut' => $statut]);
+        }
 
         self::assertSame(['Disponible'], array_column($this->requeteJson('GET', '/api/annonces')['elements'], 'titre'));
-        self::assertSame(['Occupée'], array_column($this->requeteJson('GET', '/api/annonces?statut=occupe')['elements'], 'titre'));
-
-        $this->requeteJson('GET', '/api/annonces?statut=suspendu');
-        self::assertResponseStatusCodeSame(422);
+        // Demander un autre statut ne sert à rien : les biens pris ne sont jamais listés.
+        self::assertSame(['Disponible'], array_column($this->requeteJson('GET', '/api/annonces?statut=occupe')['elements'], 'titre'));
     }
 
     public function testFiltres(): void

@@ -45,6 +45,10 @@ class GestionAnnonces
     public function modifier(Annonce $annonce, AnnonceDto $donnees): Annonce
     {
         $this->remplir($annonce, $donnees);
+        // Une annonce en ligne que l'annonceur met à jour est, de fait, toujours disponible.
+        if (StatutAnnonce::DISPONIBLE === $annonce->getStatut()) {
+            $annonce->confirmerDisponibilite();
+        }
         $this->valider($annonce);
         $this->quartierOfficiel($annonce, $annonce->getPubliePar());
         $this->em->flush();
@@ -61,9 +65,16 @@ class GestionAnnonces
         if (!$estAdmin && (StatutAnnonce::SUSPENDU === $statut || StatutAnnonce::SUSPENDU === $annonce->getStatut())) {
             throw new AccessDeniedHttpException('Seul un administrateur peut suspendre une annonce ou lever une suspension.');
         }
+        if (StatutAnnonce::A_CONFIRMER === $statut) {
+            throw new AccessDeniedHttpException('Le statut « À confirmer » est attribué automatiquement.');
+        }
 
         $ancien = $annonce->getStatut();
-        $annonce->setStatut($statut);
+        if (StatutAnnonce::DISPONIBLE === $statut) {
+            $annonce->confirmerDisponibilite(); // remise en ligne : le délai de rappel repart de zéro
+        } else {
+            $annonce->setStatut($statut)->setDateRappelDisponibilite(null);
+        }
         $this->em->flush();
 
         // Ceux qui l'ont en favori sont prévenus d'un vrai changement (pas d'un clic sur le même statut).

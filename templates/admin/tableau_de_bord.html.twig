@@ -78,6 +78,14 @@
             </a>
         {% endif %}
 
+        {% if aConfirmer > 0 %}
+            <a class="encadre-etat" href="{{ path('admin_biens', {statut: 'a_confirmer'}) }}" style="color: inherit; text-decoration: none">
+                <i data-lucide="calendar-clock"></i>
+                <div><strong>{{ aConfirmer }} annonce{{ aConfirmer > 1 ? 's' }} à confirmer</strong>
+                    <p>Retirée{{ aConfirmer > 1 ? 's' }} du public : l'annonceur n'a pas confirmé la disponibilité.</p></div>
+            </a>
+        {% endif %}
+
         <section class="carte">
             <div class="carte__entete"><h2><i data-lucide="clock"></i>Activité récente</h2></div>
             {% if activite is empty %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Disponibilité de votre annonce · LogeTogo</title>
+    <style>
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;
+               font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+        .carte { width: 100%; max-width: 440px; background: #fff; border-radius: 16px; padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.08); text-align: center; }
+        h1 { color: #8F3400; font-size: 20px; margin: 0 0 6px; }
+        .titre { font-weight: 700; margin: 14px 0 6px; }
+        p { color: #555; line-height: 1.5; }
+        button { width: 100%; border: 0; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; color: #fff; background: #8F3400; cursor: pointer; margin-top: 12px; }
+        button.pris { background: #28A745; }
+    </style>
+</head>
+<body>
+<div class="carte">
+    <h1>LogeTogo</h1>
+    <div class="titre">« {{ annonce.titre }} »</div>
+    {% if etat == 'invalide' %}
+        <p>Ce lien n'est plus valable. Ouvrez l'application LogeTogo pour mettre à jour votre annonce.</p>
+    {% elseif etat == 'question' %}
+        {% if reponse == 'disponible' %}
+            <p>Confirmez-vous que ce bien est <strong>toujours disponible</strong> ? Il restera visible des locataires.</p>
+            <form method="post"><button type="submit">Oui, toujours disponible</button></form>
+        {% else %}
+            <p>Confirmez-vous que ce bien est <strong>déjà {{ pris }}</strong> ? Il sera retiré des annonces.</p>
+            <form method="post"><button type="submit" class="pris">Oui, déjà {{ pris }}</button></form>
+        {% endif %}
+    {% elseif reponse == 'disponible' %}
+        <p>Merci ! Votre annonce reste en ligne. Nous vous redemanderons dans une semaine.</p>
+    {% else %}
+        <p>C'est noté : le bien est marqué « {{ pris }} » et n'est plus proposé aux locataires. Vous pourrez le remettre en ligne depuis l'application.</p>
+    {% endif %}
+</div>
+</body>
+</html>

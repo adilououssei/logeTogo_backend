@@ -6,6 +6,7 @@ use App\Entity\Annonce;
 use App\Entity\DemandeVerification;
 use App\Entity\Signalement;
 use App\Enum\RoleUtilisateur;
+use App\Enum\StatutAnnonce;
 use App\Enum\TypeBien;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -52,6 +53,12 @@ class StatistiquesAdmin
                     + (int) $this->sql->fetchOne('SELECT COUNT(*) FROM demande_verification WHERE date_demande >= ?', [$debutMois]),
             ],
         ];
+    }
+
+    /** Annonces retirées du public faute de confirmation de leur annonceur. */
+    public function annoncesAConfirmer(): int
+    {
+        return (int) $this->sql->fetchOne('SELECT COUNT(*) FROM annonce WHERE statut = ?', [StatutAnnonce::A_CONFIRMER->value]);
     }
 
     public function signalementsEnAttente(): int

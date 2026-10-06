@@ -33,15 +33,16 @@
 
     <div class="tableau-conteneur">
         <table class="tableau">
-            <thead><tr><th>Agent</th><th>Région</th><th class="nombre">Annonces</th><th class="nombre">Disponibles</th><th class="nombre">Vues</th><th>Identité</th><th>État</th><th></th></tr></thead>
+            <thead><tr><th>Agent</th><th>Région</th><th class="nombre">Annonces</th><th class="nombre">Disponibles</th><th class="nombre" title="Annonces dont la disponibilité n'est pas confirmée (rappel sans réponse ou retirées)">Sans réponse</th><th class="nombre">Vues</th><th>Identité</th><th>État</th><th></th></tr></thead>
             <tbody>
             {% for u in utilisateurs %}
-                {% set a = activite[u.id] ?? {annonces: 0, disponibles: 0, vues: 0} %}
+                {% set a = activite[u.id] ?? {annonces: 0, disponibles: 0, sans_reponse: 0, vues: 0} %}
                 <tr>
                     <td>{{ m.personne(u, u.telephone ?? ('@' ~ u.identifiant)) }}</td>
                     <td>{{ u.region ? u.region.libelle : '—' }}</td>
                     <td class="nombre">{{ a.annonces }}</td>
                     <td class="nombre">{{ a.disponibles ?? 0 }}</td>
+                    <td class="nombre">{% if (a.sans_reponse ?? 0) > 0 %}<span class="pastille pastille--jaune">{{ a.sans_reponse }}</span>{% else %}0{% endif %}</td>
                     <td class="nombre">{{ a.vues|number_format(0, ',', ' ') }}</td>
                     <td>{% if u.verifie %}<span class="pastille pastille--vert"><i data-lucide="badge-check"></i>Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
                     <td>{{ m.etat_compte(u) }}</td>
@@ -55,7 +56,7 @@
                     </div></td>
                 </tr>
             {% else %}
-                <tr><td colspan="8" class="vide"><i data-lucide="user-round"></i>Aucun agent ne correspond à ces critères.</td></tr>
+                <tr><td colspan="9" class="vide"><i data-lucide="user-round"></i>Aucun agent ne correspond à ces critères.</td></tr>
             {% endfor %}
             </tbody>
         </table>

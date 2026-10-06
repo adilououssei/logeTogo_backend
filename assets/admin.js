@@ -88,16 +88,8 @@ document.querySelectorAll('.message--succes').forEach((message) => {
 // Graphiques : <canvas data-graphique='{"type": "ligne", ...}'>
 const COULEURS = { bleu: '#1d6fe8', jaune: '#f5b400', marron: '#8b3a0f', bleuClair: '#3faef0', gris: '#9aa3b5', vert: '#1e9e4a' };
 
-function degrade(contexte, couleur) {
-  const d = contexte.createLinearGradient(0, 0, 0, contexte.canvas.clientHeight || 230);
-  d.addColorStop(0, `${couleur}40`);
-  d.addColorStop(1, `${couleur}00`);
-  return d;
-}
-
 document.querySelectorAll('canvas[data-graphique]').forEach((canvas) => {
   const config = JSON.parse(canvas.dataset.graphique);
-  const contexte = canvas.getContext('2d');
 
   if (config.type === 'anneau') {
     new Chart(canvas, {
@@ -119,7 +111,7 @@ document.querySelectorAll('canvas[data-graphique]').forEach((canvas) => {
           label: serie.nom,
           data: serie.valeurs,
           borderColor: couleur,
-          backgroundColor: ligne ? degrade(contexte, couleur) : couleur,
+          backgroundColor: ligne ? `${couleur}1A` : couleur, // aire sous la courbe : teinte unie et légère
           fill: ligne,
           tension: 0.35,
           pointRadius: ligne ? 4 : 0,

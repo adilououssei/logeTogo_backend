@@ -1,0 +1,69 @@
+# Production de LogeTogo sur le VPS (à côté de Zonal, sans rien partager avec lui).
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Les secrets (mots de passe, APP_SECRET, JWT, email) sont dans .env.prod.local, sur le serveur
+# uniquement (jamais dans Git) : voir .env.prod.local.exemple et DEPLOIEMENT.md.
+name: logetogo
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: .env.prod.local        # MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build:
+      context: .
+      target: backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file: .env.prod.local
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      # Le HTTPS est géré par le Nginx du VPS : on fait confiance à ses en-têtes X-Forwarded-*.
+      SYMFONY_TRUSTED_PROXIES: "PRIVATE_SUBNETS"
+      MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=0"
+      WHISPER_URL: "http://whisper:8080/inference"
+      FFMPEG_CHEMIN: "/usr/bin/ffmpeg"
+    volumes:
+      # Données qui doivent survivre aux mises à jour (et sont sauvegardées chaque nuit).
+      - ./public/uploads:/var/www/html/public/uploads
+      - ./var/verifications:/var/www/html/var/verifications
+      - ./config/jwt:/var/www/html/config/jwt:ro
+
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Seulement en local : le Nginx du VPS (HTTPS) transmet vers ce port.
+      - "127.0.0.1:8100:80"
+    volumes:
+      - ./public/uploads:/var/www/html/public/uploads:ro
+
+  whisper:
+    build:
+      context: .
+      target: whisper
+    restart: unless-stopped
+    environment:
+      WHISPER_THREADS: "2"           # 2 processeurs sur 4 : Zonal garde de la marge
+    volumes:
+      - whisper_modeles:/modeles
+
+volumes:
+  mysql_data:
+  whisper_modeles:
