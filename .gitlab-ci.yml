@@ -1,29 +1,67 @@
-# Pipeline LogeTogo : à chaque envoi sur GitLab, les tests sont lancés.
+# Pipeline LogeTogo : tests à chaque envoi, puis (sur main) fabrication des images Docker.
 stages:
   - test
+  - build
 
 tests:
   stage: test
-  image: php:8.4-cli-alpine          # la machine du job : PHP 8.4
+  image: php:8.4-cli-alpine
   services:
-    - name: mysql:8.0                # une base MySQL jetable, juste pour ce job
+    - name: mysql:8.0
       alias: mysql
   variables:
     MYSQL_ROOT_PASSWORD: root
     MYSQL_DATABASE: logetogo_test
-    # Symfony ajoute « _test » au nom de la base en mode test : logetogo → logetogo_test.
     DATABASE_URL: "mysql://root:root@mysql:3306/logetogo?serverVersion=8.0.32&charset=utf8mb4"
   before_script:
-    # Extensions PHP (gd : les tests fabriquent de petites images).
     - apk add --no-cache icu-dev libzip-dev libpng-dev git unzip
     - docker-php-ext-install pdo_mysql intl zip gd
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-    # Dépendances AVEC les outils de développement (PHPUnit).
     - composer install --no-interaction --no-progress
-    # Clés JWT jetables, seulement pour les tests.
     - php bin/console lexik:jwt:generate-keypair --env=test --skip-if-exists
-    # Attendre que MySQL soit prêt, puis créer les tables.
     - until php -r 'exit(@fsockopen("mysql",3306)?0:1);'; do sleep 2; done
     - php bin/console doctrine:migrations:migrate --env=test --no-interaction
   script:
     - php bin/phpunit
+
+# Modèle commun aux jobs qui fabriquent des images (le « & » lui donne un nom réutilisable).
+.docker: &docker
+  stage: build
+  image: docker:27                   # une machine avec la commande docker
+  services:
+    - docker:27-dind                 # « Docker in Docker » : le moteur qui fabrique les images
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    # Connexion au registre de GitLab (identifiants fournis automatiquement par GitLab).
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+
+# Images PHP et Nginx : après chaque envoi sur main dont les tests passent.
+images:
+  <<: *docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - |
+      for cible in php web; do
+        docker build --target "$cible" \
+          --cache-from "$CI_REGISTRY_IMAGE/$cible:latest" \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          -t "$CI_REGISTRY_IMAGE/$cible:$CI_COMMIT_SHORT_SHA" \
+          -t "$CI_REGISTRY_IMAGE/$cible:latest" .
+        docker push --all-tags "$CI_REGISTRY_IMAGE/$cible"
+      done
+
+# Image Whisper : automatique si ses fichiers changent, sinon bouton ▶ (lancement à la main).
+whisper:
+  <<: *docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - docker/whisper/**/*
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: true
+  script:
+    - docker build --target whisper -t "$CI_REGISTRY_IMAGE/whisper:$CI_COMMIT_SHORT_SHA" -t "$CI_REGISTRY_IMAGE/whisper:latest" .
+    - docker push --all-tags "$CI_REGISTRY_IMAGE/whisper"
