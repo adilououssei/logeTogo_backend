@@ -7,6 +7,7 @@ use App\Dto\PreferencesDto;
 use App\Dto\ProfilDto;
 use App\Entity\Utilisateur;
 use App\Service\GestionProfil;
+use App\Service\SuppressionCompte;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,9 +16,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 /** Profil de l'utilisateur connecté : informations, photo et mot de passe. */
 #[Route('/api/profil', name: 'api_profil_', format: 'json')]
@@ -79,5 +84,27 @@ class ProfilController extends AbstractController
     public function retirerAvatar(#[CurrentUser] Utilisateur $utilisateur, GestionProfil $profil): JsonResponse
     {
         return $this->json($profil->retirerAvatar($utilisateur), context: self::GROUPES);
+    }
+
+    /**
+     * Suppression définitive du compte (exigée par Google Play), confirmée par le mot de passe :
+     * un téléphone resté connecté ne suffit pas. {"motDePasse": "..."} → 204, ou 422 si faux.
+     */
+    #[Route('/supprimer', name: 'supprimer', methods: ['POST'])]
+    public function supprimer(
+        Request $requete,
+        #[CurrentUser] Utilisateur $utilisateur,
+        UserPasswordHasherInterface $hacheur,
+        SuppressionCompte $suppression,
+    ): Response {
+        if (!$hacheur->isPasswordValid($utilisateur, (string) $requete->getPayload()->get('motDePasse', ''))) {
+            $texte = 'Mot de passe incorrect.';
+            throw new ValidationFailedException(null, new ConstraintViolationList([
+                new ConstraintViolation($texte, $texte, [], null, 'motDePasse', null),
+            ]));
+        }
+        $suppression->supprimer($utilisateur);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
     }
 }
