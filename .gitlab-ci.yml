@@ -1,0 +1,29 @@
+# Pipeline LogeTogo : à chaque envoi sur GitLab, les tests sont lancés.
+stages:
+  - test
+
+tests:
+  stage: test
+  image: php:8.4-cli-alpine          # la machine du job : PHP 8.4
+  services:
+    - name: mysql:8.0                # une base MySQL jetable, juste pour ce job
+      alias: mysql
+  variables:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_DATABASE: logetogo_test
+    # Symfony ajoute « _test » au nom de la base en mode test : logetogo → logetogo_test.
+    DATABASE_URL: "mysql://root:root@mysql:3306/logetogo?serverVersion=8.0.32&charset=utf8mb4"
+  before_script:
+    # Extensions PHP (gd : les tests fabriquent de petites images).
+    - apk add --no-cache icu-dev libzip-dev libpng-dev git unzip
+    - docker-php-ext-install pdo_mysql intl zip gd
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    # Dépendances AVEC les outils de développement (PHPUnit).
+    - composer install --no-interaction --no-progress
+    # Clés JWT jetables, seulement pour les tests.
+    - php bin/console lexik:jwt:generate-keypair --env=test --skip-if-exists
+    # Attendre que MySQL soit prêt, puis créer les tables.
+    - until php -r 'exit(@fsockopen("mysql",3306)?0:1);'; do sleep 2; done
+    - php bin/console doctrine:migrations:migrate --env=test --no-interaction
+  script:
+    - php bin/phpunit
