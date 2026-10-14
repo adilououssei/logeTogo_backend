@@ -41,6 +41,8 @@ class PresentateurConversation
                 'nom' => $interlocuteur->getNom(),
                 'avatar' => $interlocuteur->getAvatar(),
                 'role' => $interlocuteur->getRole()->value,
+                // Vrai quand l'interlocuteur est l'auteur de l'annonce (plus de rôle pour le deviner).
+                'estAnnonceur' => $interlocuteurEstAnnonceur,
                 'verifie' => $interlocuteur->isVerifie(),
                 // Seul le numéro de l'annonceur est communiqué (celui de l'annonce en priorité),
                 // jamais celui de la personne qui a pris contact.

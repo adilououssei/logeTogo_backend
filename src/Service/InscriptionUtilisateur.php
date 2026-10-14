@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Dto\InscriptionDto;
 use App\Entity\Utilisateur;
+use App\Enum\RoleUtilisateur;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -31,7 +32,7 @@ class InscriptionUtilisateur
             ->setPrenom(trim($donnees->prenom))
             ->setNom(trim($donnees->nom))
             ->setRegion($donnees->region)
-            ->setRole($donnees->role)
+            ->setRole(RoleUtilisateur::LOCATAIRE) // même compte pour tous : chacun peut publier
             ->setEmail(null !== $donnees->email ? mb_strtolower(trim($donnees->email)) : null)
             ->setTelephone(null !== $donnees->telephone ? trim($donnees->telephone) : null)
             ->setWhatsapp(null !== $donnees->whatsapp ? trim($donnees->whatsapp) : null)

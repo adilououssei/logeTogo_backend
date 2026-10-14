@@ -2,6 +2,7 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Annonce;
 use App\Entity\Utilisateur;
 use App\Enum\Region;
 use App\Enum\RoleUtilisateur;
@@ -9,6 +10,7 @@ use App\Repository\AnnonceRepository;
 use App\Repository\DemandeVerificationRepository;
 use App\Service\Moderation;
 use App\Service\Notation;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,13 +19,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-/** Utilisateurs (tous rôles) et agents immobiliers : consultation, suspension, badge « vérifié ». */
+/**
+ * Membres et annonceurs : consultation, suspension, badge « vérifié ».
+ * Tout le monde peut publier : un « annonceur » est simplement un membre qui a déjà publié une annonce.
+ */
 #[Route('/admin', name: 'admin_')]
 class UtilisateurController extends AbstractController
 {
     use JetonAdminTrait;
 
     private const PAR_PAGE = 20;
+    private const TYPE_ANNONCEUR = 'annonceur';
 
     #[Route('/utilisateurs', name: 'utilisateurs', methods: ['GET'])]
     public function liste(Request $requete, EntityManagerInterface $em): Response
@@ -31,22 +37,11 @@ class UtilisateurController extends AbstractController
         return $this->render('admin/utilisateurs/liste.html.twig', $this->rechercher($requete, $em, null));
     }
 
-    /** Agents immobiliers seulement, avec leurs annonces et leurs vues. */
-    #[Route('/agents', name: 'agents', methods: ['GET'])]
-    public function agents(Request $requete, EntityManagerInterface $em): Response
+    /** Annonceurs (membres ayant publié au moins une annonce), avec leurs annonces et leurs vues. */
+    #[Route('/annonceurs', name: 'annonceurs', methods: ['GET'])]
+    public function annonceurs(Request $requete, EntityManagerInterface $em): Response
     {
-        $donnees = $this->rechercher($requete, $em, RoleUtilisateur::AGENT);
-        $ids = array_map(fn (Utilisateur $u) => $u->getId(), $donnees['utilisateurs']);
-        $donnees['activite'] = [] === $ids ? [] : array_column($em->getConnection()->fetchAllAssociative(
-            'SELECT publie_par_id AS id, COUNT(*) AS annonces, COALESCE(SUM(nombre_vues), 0) AS vues,
-                    SUM(statut = \'disponible\') AS disponibles,
-                    SUM(statut = \'a_confirmer\' OR (statut = \'disponible\' AND date_rappel_disponibilite IS NOT NULL)) AS sans_reponse
-             FROM annonce WHERE publie_par_id IN (?) GROUP BY publie_par_id',
-            [$ids],
-            [\Doctrine\DBAL\ArrayParameterType::INTEGER],
-        ), null, 'id');
-
-        return $this->render('admin/agents/liste.html.twig', $donnees);
+        return $this->render('admin/annonceurs/liste.html.twig', $this->rechercher($requete, $em, self::TYPE_ANNONCEUR));
     }
 
     #[Route('/utilisateurs/{id}', name: 'utilisateur', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -89,11 +84,12 @@ class UtilisateurController extends AbstractController
     }
 
     /** @return array<string, mixed> */
-    private function rechercher(Request $requete, EntityManagerInterface $em, ?RoleUtilisateur $roleImpose): array
+    private function rechercher(Request $requete, EntityManagerInterface $em, ?string $typeImpose): array
     {
         $filtres = [
             'q' => trim((string) $requete->query->get('q', '')),
-            'role' => $roleImpose?->value ?? (string) $requete->query->get('role', ''),
+            // Type de compte : « membre », « annonceur » (a publié) ou « admin ».
+            'type' => $typeImpose ?? (string) $requete->query->get('type', ''),
             'etat' => (string) $requete->query->get('etat', ''),
             'region' => (string) $requete->query->get('region', ''),
             'verifie' => (string) $requete->query->get('verifie', ''),
@@ -105,9 +101,12 @@ class UtilisateurController extends AbstractController
             $qb->andWhere('u.nom LIKE :q OR u.prenom LIKE :q OR u.identifiant LIKE :q OR u.email LIKE :q OR u.telephone LIKE :q')
                 ->setParameter('q', '%'.$filtres['q'].'%');
         }
-        if (null !== ($role = RoleUtilisateur::tryFrom($filtres['role']))) {
-            $qb->andWhere('u.role = :role')->setParameter('role', $role);
-        }
+        match ($filtres['type']) {
+            'admin' => $qb->andWhere('u.role = :admin')->setParameter('admin', RoleUtilisateur::ADMIN),
+            'membre' => $qb->andWhere('u.role <> :admin')->setParameter('admin', RoleUtilisateur::ADMIN),
+            self::TYPE_ANNONCEUR => $qb->andWhere('EXISTS (SELECT 1 FROM '.Annonce::class.' a WHERE a.publiePar = u)'),
+            default => null,
+        };
         if (null !== ($region = Region::tryFrom($filtres['region']))) {
             $qb->andWhere('u.region = :region')->setParameter('region', $region);
         }
@@ -119,15 +118,40 @@ class UtilisateurController extends AbstractController
         }
 
         $paginateur = new Paginator($qb->setFirstResult(($page - 1) * self::PAR_PAGE)->setMaxResults(self::PAR_PAGE));
+        $utilisateurs = iterator_to_array($paginateur);
 
         return [
-            'utilisateurs' => iterator_to_array($paginateur),
+            'utilisateurs' => $utilisateurs,
+            'activite' => $this->activite($em, $utilisateurs),
             'total' => \count($paginateur),
             'page' => $page,
             'pages' => max(1, (int) ceil(\count($paginateur) / self::PAR_PAGE)),
             'filtres' => $filtres,
-            'roles' => RoleUtilisateur::cases(),
             'regions' => Region::cases(),
         ];
+    }
+
+    /**
+     * Annonces, disponibilité et vues des utilisateurs affichés, indexées par identifiant.
+     *
+     * @param list<Utilisateur> $utilisateurs
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function activite(EntityManagerInterface $em, array $utilisateurs): array
+    {
+        $ids = array_map(fn (Utilisateur $u) => $u->getId(), $utilisateurs);
+        if ([] === $ids) {
+            return [];
+        }
+
+        return array_column($em->getConnection()->fetchAllAssociative(
+            'SELECT publie_par_id AS id, COUNT(*) AS annonces, COALESCE(SUM(nombre_vues), 0) AS vues,
+                    SUM(statut = \'disponible\') AS disponibles,
+                    SUM(statut = \'a_confirmer\' OR (statut = \'disponible\' AND date_rappel_disponibilite IS NOT NULL)) AS sans_reponse
+             FROM annonce WHERE publie_par_id IN (?) GROUP BY publie_par_id',
+            [$ids],
+            [ArrayParameterType::INTEGER],
+        ), null, 'id');
     }
 }

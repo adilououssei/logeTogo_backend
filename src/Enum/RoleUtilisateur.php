@@ -12,9 +12,8 @@ enum RoleUtilisateur: string
     public function libelle(): string
     {
         return match ($this) {
-            self::LOCATAIRE => 'Locataire',
-            self::PROPRIETAIRE => 'Propriétaire',
-            self::AGENT => 'Agent immobilier',
+            // Plus de distinction entre les comptes : tout le monde peut publier (anciens rôles conservés en base).
+            self::LOCATAIRE, self::PROPRIETAIRE, self::AGENT => 'Membre',
             self::ADMIN => 'Administrateur',
         };
     }
@@ -25,9 +24,13 @@ enum RoleUtilisateur: string
         return 'ROLE_'.strtoupper($this->value);
     }
 
-    /** Les agents et les propriétaires peuvent publier des annonces. */
+    /**
+     * Tout compte connecté peut publier des annonces (comme sur CoinAfrique) : plus de choix
+     * « locataire / propriétaire / agent » à l'inscription. Les anciens rôles restent en base,
+     * sans effet sur les droits.
+     */
     public function peutPublier(): bool
     {
-        return \in_array($this, [self::AGENT, self::PROPRIETAIRE, self::ADMIN], true);
+        return true;
     }
 }

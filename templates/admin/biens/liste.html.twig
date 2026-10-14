@@ -45,7 +45,7 @@
                         <span class="texte-gris texte-petit">{{ a.localisation.quartier }}, {{ a.localisation.ville }} · {{ a.datePublication|date('d/m/Y') }}</span></td>
                     <td>{{ a.typeBien.libelle }}<br>{{ m.transaction(a.typeTransaction) }}</td>
                     <td style="white-space:nowrap">{{ a.prix|fcfa }}{{ a.typeTransaction.value == 'location' ? '/mois' }}</td>
-                    <td>{{ m.personne(a.publiePar, a.publiePar.role.libelle) }}</td>
+                    <td>{{ m.personne(a.publiePar, a.publiePar.telephone ?? ('@' ~ a.publiePar.identifiant)) }}</td>
                     <td>{{ m.statut_annonce(a.statut) }}</td>
                     <td class="nombre">{{ a.nombreVues }}</td>
                     <td style="text-align:right">

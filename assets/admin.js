@@ -12,7 +12,7 @@ const MOINS_D_ANIMATIONS = window.matchMedia('(prefers-reduced-motion: reduce)')
 
 Chart.register(...registerables);
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
-Chart.defaults.color = '#6b7489';
+Chart.defaults.color = '#666666';
 Chart.defaults.animation = MOINS_D_ANIMATIONS ? false : { duration: 800, easing: 'easeOutQuart' };
 
 createIcons({ icons, attrs: { 'stroke-width': 1.8 } });
@@ -86,7 +86,7 @@ document.querySelectorAll('.message--succes').forEach((message) => {
 });
 
 // Graphiques : <canvas data-graphique='{"type": "ligne", ...}'>
-const COULEURS = { bleu: '#1d6fe8', jaune: '#f5b400', marron: '#8b3a0f', bleuClair: '#3faef0', gris: '#9aa3b5', vert: '#1e9e4a' };
+const COULEURS = { bleu: '#059eff', jaune: '#ffbf00', marron: '#8f3400', bleuClair: '#6cc6ff', gris: '#aaaaaa', vert: '#28a745' };
 
 document.querySelectorAll('canvas[data-graphique]').forEach((canvas) => {
   const config = JSON.parse(canvas.dataset.graphique);
@@ -128,7 +128,7 @@ document.querySelectorAll('canvas[data-graphique]').forEach((canvas) => {
       plugins: { legend: { display: !!config.legende, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
       scales: {
         x: { grid: { display: false }, stacked: !!config.empile },
-        y: { beginAtZero: true, stacked: !!config.empile, ticks: { precision: 0 }, grid: { color: '#eef1f6' }, border: { display: false } },
+        y: { beginAtZero: true, stacked: !!config.empile, ticks: { precision: 0 }, grid: { color: '#eeeeee' }, border: { display: false } },
       },
     },
   });

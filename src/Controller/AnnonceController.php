@@ -64,7 +64,7 @@ class AnnonceController extends AbstractController
 
     /** Annonces de l'agent ou du propriétaire connecté, tous statuts confondus (tableaux de bord). */
     #[Route('/mes-annonces', name: 'mes_annonces', methods: ['GET'])]
-    #[IsGranted(AnnonceVoter::PUBLIER, message: 'Réservé aux agents et propriétaires.')]
+    #[IsGranted(AnnonceVoter::PUBLIER, message: 'Connectez-vous pour publier une annonce.')]
     public function mesAnnonces(#[CurrentUser] Utilisateur $utilisateur, AnnonceRepository $annonces, Notation $notation): JsonResponse
     {
         $liste = $annonces->trouverParAnnonceur($utilisateur);
@@ -92,7 +92,7 @@ class AnnonceController extends AbstractController
 
     /** Publie une annonce (201). Les photos et vidéos s'ajoutent ensuite via /api/annonces/{id}/medias. */
     #[Route('', name: 'publier', methods: ['POST'])]
-    #[IsGranted(AnnonceVoter::PUBLIER, message: 'Seuls les agents et les propriétaires peuvent publier une annonce.')]
+    #[IsGranted(AnnonceVoter::PUBLIER, message: 'Connectez-vous pour publier une annonce.')]
     public function publier(
         #[MapRequestPayload(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)] AnnonceDto $donnees,
         #[CurrentUser] Utilisateur $utilisateur,

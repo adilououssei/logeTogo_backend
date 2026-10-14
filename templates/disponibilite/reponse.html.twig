@@ -24,7 +24,7 @@
         <p>Ce lien n'est plus valable. Ouvrez l'application LogeTogo pour mettre à jour votre annonce.</p>
     {% elseif etat == 'question' %}
         {% if reponse == 'disponible' %}
-            <p>Confirmez-vous que ce bien est <strong>toujours disponible</strong> ? Il restera visible des locataires.</p>
+            <p>Confirmez-vous que ce bien est <strong>toujours disponible</strong> ? Il restera visible dans l'application.</p>
             <form method="post"><button type="submit">Oui, toujours disponible</button></form>
         {% else %}
             <p>Confirmez-vous que ce bien est <strong>déjà {{ pris }}</strong> ? Il sera retiré des annonces.</p>
@@ -33,7 +33,7 @@
     {% elseif reponse == 'disponible' %}
         <p>Merci ! Votre annonce reste en ligne. Nous vous redemanderons dans une semaine.</p>
     {% else %}
-        <p>C'est noté : le bien est marqué « {{ pris }} » et n'est plus proposé aux locataires. Vous pourrez le remettre en ligne depuis l'application.</p>
+        <p>C'est noté : le bien est marqué « {{ pris }} » et n'est plus proposé dans l'application. Vous pourrez le remettre en ligne depuis l'application.</p>
     {% endif %}
 </div>
 </body>

@@ -5,7 +5,6 @@ namespace App\Service;
 use App\Entity\Annonce;
 use App\Entity\DemandeVerification;
 use App\Entity\Signalement;
-use App\Enum\RoleUtilisateur;
 use App\Enum\StatutAnnonce;
 use App\Enum\TypeBien;
 use Doctrine\DBAL\Connection;
@@ -28,21 +27,27 @@ class StatistiquesAdmin
 
     /**
      * Les quatre cartes du tableau de bord, avec les nouveautés du mois.
+     * Un « annonceur » est un membre qui a publié au moins une annonce (tout le monde peut publier).
      *
      * @return array<string, array{total: int, ceMois: int}>
      */
     public function indicateurs(): array
     {
         $debutMois = (new \DateTimeImmutable('first day of this month'))->setTime(0, 0)->format('Y-m-d H:i:s');
-        $parRole = fn (RoleUtilisateur $role) => [
-            'total' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM utilisateur WHERE role = ?', [$role->value]),
-            'ceMois' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM utilisateur WHERE role = ? AND date_inscription >= ?', [$role->value, $debutMois]),
-        ];
 
         return [
-            'clients' => $parRole(RoleUtilisateur::LOCATAIRE),
-            'agents' => $parRole(RoleUtilisateur::AGENT),
-            'proprietaires' => $parRole(RoleUtilisateur::PROPRIETAIRE),
+            'membres' => [
+                'total' => (int) $this->sql->fetchOne("SELECT COUNT(*) FROM utilisateur WHERE role <> 'admin'"),
+                'ceMois' => (int) $this->sql->fetchOne("SELECT COUNT(*) FROM utilisateur WHERE role <> 'admin' AND date_inscription >= ?", [$debutMois]),
+            ],
+            'annonceurs' => [
+                'total' => (int) $this->sql->fetchOne('SELECT COUNT(DISTINCT publie_par_id) FROM annonce'),
+                // Nouveaux annonceurs : ceux dont la première annonce date de ce mois.
+                'ceMois' => (int) $this->sql->fetchOne(
+                    'SELECT COUNT(*) FROM (SELECT MIN(date_publication) AS premiere FROM annonce GROUP BY publie_par_id) t WHERE premiere >= ?',
+                    [$debutMois],
+                ),
+            ],
             'biens' => [
                 'total' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM annonce'),
                 'ceMois' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM annonce WHERE date_publication >= ?', [$debutMois]),
@@ -100,25 +105,28 @@ class StatistiquesAdmin
     }
 
     /**
-     * Inscriptions par mois et par rôle.
+     * Nouveaux membres par mois, et nouveaux annonceurs (mois de leur première annonce).
      *
      * @return array{mois: list<string>, series: array<string, list<int>>}
      */
     public function evolutionInscriptions(int $nombreMois = 12): array
     {
         $mois = $this->derniersMois($nombreMois);
-        $lignes = $this->sql->fetchAllAssociative(
-            "SELECT DATE_FORMAT(date_inscription, '%Y-%m') AS mois, role, COUNT(*) AS n
-             FROM utilisateur WHERE date_inscription >= ? AND role <> 'admin' GROUP BY mois, role",
-            [array_key_first($mois).'-01'],
-        );
+        $debut = array_key_first($mois).'-01';
+        $requetes = [
+            'membres' => ["SELECT DATE_FORMAT(date_inscription, '%Y-%m') AS mois, COUNT(*) AS n
+                           FROM utilisateur WHERE date_inscription >= ? AND role <> 'admin' GROUP BY mois", [$debut]],
+            'annonceurs' => ["SELECT DATE_FORMAT(premiere, '%Y-%m') AS mois, COUNT(*) AS n
+                              FROM (SELECT MIN(date_publication) AS premiere FROM annonce GROUP BY publie_par_id) t
+                              WHERE premiere >= ? GROUP BY mois", [$debut]],
+        ];
         $series = [];
-        foreach ([RoleUtilisateur::LOCATAIRE, RoleUtilisateur::AGENT, RoleUtilisateur::PROPRIETAIRE] as $role) {
-            $series[$role->value] = array_fill_keys(array_keys($mois), 0);
-        }
-        foreach ($lignes as $l) {
-            if (isset($series[$l['role']][$l['mois']])) {
-                $series[$l['role']][$l['mois']] = (int) $l['n'];
+        foreach ($requetes as $nom => [$sql, $parametres]) {
+            $series[$nom] = array_fill_keys(array_keys($mois), 0);
+            foreach ($this->sql->fetchAllAssociative($sql, $parametres) as $l) {
+                if (isset($series[$nom][$l['mois']])) {
+                    $series[$nom][$l['mois']] = (int) $l['n'];
+                }
             }
         }
 
@@ -170,24 +178,23 @@ class StatistiquesAdmin
             'avis' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM avis'),
             'noteMoyenne' => ($n = $this->sql->fetchOne('SELECT AVG(note) FROM avis')) !== null ? round((float) $n, 1) : null,
             'alertes' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM alerte_recherche'),
-            'agentsVerifies' => (int) $this->sql->fetchOne("SELECT COUNT(*) FROM utilisateur WHERE role IN ('agent', 'proprietaire') AND verifie = 1"),
+            'annonceursVerifies' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM utilisateur u WHERE u.verifie = 1 AND EXISTS (SELECT 1 FROM annonce a WHERE a.publie_par_id = u.id)'),
             'comptesSuspendus' => (int) $this->sql->fetchOne('SELECT COUNT(*) FROM utilisateur WHERE est_actif = 0'),
         ];
     }
 
     /**
-     * Agents et propriétaires classés par nombre de vues de leurs annonces.
+     * Annonceurs classés par nombre de vues de leurs annonces.
      *
      * @return list<array<string, mixed>>
      */
     public function meilleursAnnonceurs(int $limite = 5): array
     {
         return $this->sql->fetchAllAssociative(
-            "SELECT u.id, u.prenom, u.nom, u.identifiant, u.avatar, u.role, u.verifie,
+            'SELECT u.id, u.prenom, u.nom, u.identifiant, u.avatar, u.verifie,
                     COUNT(a.id) AS annonces, COALESCE(SUM(a.nombre_vues), 0) AS vues
-             FROM utilisateur u LEFT JOIN annonce a ON a.publie_par_id = u.id
-             WHERE u.role IN ('agent', 'proprietaire')
-             GROUP BY u.id ORDER BY vues DESC, annonces DESC LIMIT ".(int) $limite,
+             FROM utilisateur u JOIN annonce a ON a.publie_par_id = u.id
+             GROUP BY u.id ORDER BY vues DESC, annonces DESC LIMIT '.(int) $limite,
         );
     }
 
@@ -213,11 +220,10 @@ class StatistiquesAdmin
     public function activiteRecente(int $limite = 6): array
     {
         $evenements = [];
-        foreach ($this->sql->fetchAllAssociative("SELECT id, prenom, nom, role, date_inscription FROM utilisateur WHERE role <> 'admin' ORDER BY date_inscription DESC LIMIT ".$limite) as $u) {
-            $role = RoleUtilisateur::from($u['role']);
+        foreach ($this->sql->fetchAllAssociative("SELECT id, prenom, nom, date_inscription FROM utilisateur WHERE role <> 'admin' ORDER BY date_inscription DESC LIMIT ".$limite) as $u) {
             $evenements[] = [
                 'type' => 'inscription',
-                'titre' => 'Nouvelle inscription · '.mb_strtolower($role->libelle()),
+                'titre' => 'Nouvelle inscription',
                 'detail' => trim($u['prenom'].' '.mb_strtoupper($u['nom'])),
                 'date' => new \DateTimeImmutable($u['date_inscription']),
                 'lien' => ['route' => 'admin_utilisateur', 'parametres' => ['id' => (int) $u['id']]],

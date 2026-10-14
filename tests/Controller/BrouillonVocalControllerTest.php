@@ -148,8 +148,8 @@ final class BrouillonVocalControllerTest extends WebTestCase
 
     public function testRefus(): void
     {
-        $this->requeteJson('POST', '/api/annonces/brouillon-vocal', ['texte' => self::CHAMBRE_SALON], $this->jetonPour($this->creerUtilisateur('ama.koffi')));
-        self::assertResponseStatusCodeSame(403, 'réservé aux agents et propriétaires');
+        $this->requeteJson('POST', '/api/annonces/brouillon-vocal', ['texte' => self::CHAMBRE_SALON]);
+        self::assertResponseStatusCodeSame(401, 'réservé aux comptes connectés');
 
         $trop = $this->requeteJson('POST', '/api/annonces/brouillon-vocal', ['texte' => 'Chambre'], $this->jetonAgent());
         self::assertResponseStatusCodeSame(422);

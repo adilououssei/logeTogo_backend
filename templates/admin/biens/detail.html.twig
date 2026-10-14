@@ -65,7 +65,7 @@
 
         <section class="carte">
             <div class="carte__entete"><h2><i data-lucide="user-round"></i>Annonceur</h2></div>
-            <div class="carte__corps">{{ m.personne(annonce.publiePar, annonce.publiePar.role.libelle ~ ' · ' ~ (annonce.publiePar.telephone ?? annonce.publiePar.email ?? '@' ~ annonce.publiePar.identifiant)) }}</div>
+            <div class="carte__corps">{{ m.personne(annonce.publiePar, annonce.publiePar.telephone ?? annonce.publiePar.email ?? '@' ~ annonce.publiePar.identifiant) }}</div>
         </section>
 
         <section class="carte">

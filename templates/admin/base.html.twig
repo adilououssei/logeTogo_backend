@@ -28,7 +28,7 @@
             {% set entrees = [
                 {route: 'admin_tableau_de_bord', icone: 'house', texte: 'Tableau de bord', actif: route == 'admin_tableau_de_bord'},
                 {route: 'admin_utilisateurs', icone: 'user', texte: 'Utilisateurs', actif: route starts with 'admin_utilisateur'},
-                {route: 'admin_agents', icone: 'user-round', texte: 'Agents immobiliers', actif: route == 'admin_agents'},
+                {route: 'admin_annonceurs', icone: 'user-round', texte: 'Annonceurs', actif: route == 'admin_annonceurs'},
                 {route: 'admin_biens', icone: 'building-2', texte: 'Biens immobiliers', actif: route starts with 'admin_bien'},
             ] %}
             {% for e in entrees %}
@@ -85,7 +85,7 @@
 
             <form class="recherche" action="{{ path('admin_recherche') }}" method="get" role="search">
                 <i data-lucide="search"></i>
-                <input type="search" name="q" value="{{ app.request.query.get('q') }}" placeholder="Rechercher un utilisateur, un bien, un agent…" autocomplete="off">
+                <input type="search" name="q" value="{{ app.request.query.get('q') }}" placeholder="Rechercher un utilisateur, un annonceur, un bien…" autocomplete="off">
             </form>
 
             <div class="barre-haut__droite">

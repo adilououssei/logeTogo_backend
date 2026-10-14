@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** Recherche de la barre du haut : utilisateurs, agents et biens à la fois. */
+/** Recherche de la barre du haut : utilisateurs (annonceurs compris) et biens à la fois. */
 class RechercheController extends AbstractController
 {
     #[Route('/admin/recherche', name: 'admin_recherche', methods: ['GET'])]

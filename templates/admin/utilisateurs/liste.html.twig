@@ -7,7 +7,7 @@
 <div class="entete-page">
     <div>
         <h1>Utilisateurs</h1>
-        <p>Locataires, propriétaires, agents et administrateurs inscrits sur LogeTogo.</p>
+        <p>Tous les comptes inscrits sur LogeTogo : chaque membre peut publier des annonces.</p>
     </div>
     <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs'}) }}"><i data-lucide="download"></i>Exporter (CSV)</a>
 </div>
@@ -15,9 +15,11 @@
 <section class="carte">
     <form class="filtres" method="get">
         <input type="search" name="q" value="{{ filtres.q }}" placeholder="Nom, identifiant, email, téléphone…">
-        <select name="role">
-            <option value="">Tous les rôles</option>
-            {% for r in roles %}<option value="{{ r.value }}" {{ filtres.role == r.value ? 'selected' }}>{{ r.libelle }}</option>{% endfor %}
+        <select name="type">
+            <option value="">Tous les comptes</option>
+            <option value="annonceur" {{ filtres.type == 'annonceur' ? 'selected' }}>Annonceurs (ont publié)</option>
+            <option value="membre" {{ filtres.type == 'membre' ? 'selected' }}>Membres</option>
+            <option value="admin" {{ filtres.type == 'admin' ? 'selected' }}>Administrateurs</option>
         </select>
         <select name="region">
             <option value="">Toutes les régions</option>
@@ -38,12 +40,13 @@
 
     <div class="tableau-conteneur">
         <table class="tableau">
-            <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Région</th><th>Contact</th><th>Inscription</th><th>État</th><th></th></tr></thead>
+            <thead><tr><th>Utilisateur</th><th>Type</th><th class="nombre">Annonces</th><th>Région</th><th>Contact</th><th>Inscription</th><th>État</th><th></th></tr></thead>
             <tbody>
             {% for u in utilisateurs %}
                 <tr>
                     <td>{{ m.personne(u) }}</td>
                     <td>{{ m.role(u.role) }}</td>
+                    <td class="nombre">{{ (activite[u.id] ?? {annonces: 0}).annonces }}</td>
                     <td>{{ u.region ? u.region.libelle : '—' }}</td>
                     <td class="texte-petit">{{ u.telephone ?? '' }}{% if u.telephone and u.email %}<br>{% endif %}<span class="texte-gris">{{ u.email ?? (u.telephone ? '' : '—') }}</span></td>
                     <td class="texte-gris texte-petit">{{ u.dateInscription|date('d/m/Y') }}</td>
@@ -59,7 +62,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="vide"><i data-lucide="users"></i>Aucun utilisateur ne correspond à ces critères.</td></tr>
+                <tr><td colspan="8" class="vide"><i data-lucide="users"></i>Aucun utilisateur ne correspond à ces critères.</td></tr>
             {% endfor %}
             </tbody>
         </table>

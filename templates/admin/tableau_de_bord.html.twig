@@ -17,8 +17,8 @@
 
 {# ─── Indicateurs ─── #}
 <div class="grille grille--indicateurs">
-    {{ m.indicateur('user', 'fond-bleu', 'Clients', indicateurs.clients.total, indicateurs.clients.ceMois, path('admin_utilisateurs', {role: 'locataire'})) }}
-    {{ m.indicateur('user-round', 'fond-marron', 'Agents immobiliers', indicateurs.agents.total, indicateurs.agents.ceMois, path('admin_agents')) }}
+    {{ m.indicateur('user', 'fond-bleu', 'Membres', indicateurs.membres.total, indicateurs.membres.ceMois, path('admin_utilisateurs')) }}
+    {{ m.indicateur('user-round', 'fond-marron', 'Annonceurs', indicateurs.annonceurs.total, indicateurs.annonceurs.ceMois, path('admin_annonceurs')) }}
     {{ m.indicateur('house', 'fond-jaune', 'Biens publiés', indicateurs.biens.total, indicateurs.biens.ceMois, path('admin_biens')) }}
     {{ m.indicateur('shield-alert', 'fond-bleu', 'À traiter', indicateurs.aTraiter.total, indicateurs.aTraiter.ceMois, path(admin_a_traiter().signalements > 0 ? 'admin_signalements' : 'admin_verifications')) }}
 </div>
@@ -29,8 +29,8 @@
         <div class="carte__entete">
             <h2><i data-lucide="house"></i>Évolution des biens publiés</h2>
             <div class="legende">
-                <span><i style="background:#1d6fe8"></i>Location</span>
-                <span><i style="background:#f5b400"></i>Vente</span>
+                <span><i style="background:#059eff"></i>Location</span>
+                <span><i style="background:#ffbf00"></i>Vente</span>
             </div>
         </div>
         <div class="carte__corps">
@@ -49,7 +49,7 @@
             <div class="vide"><i data-lucide="chart-pie"></i>Aucun bien publié pour le moment.</div>
         {% else %}
             {% set palette = ['bleu', 'jaune', 'marron', 'bleuClair', 'gris', 'vert', '#c9d0dd'] %}
-            {% set hex = {bleu: '#1d6fe8', jaune: '#f5b400', marron: '#8b3a0f', bleuClair: '#3faef0', gris: '#9aa3b5', vert: '#1e9e4a', '#c9d0dd': '#c9d0dd'} %}
+            {% set hex = {bleu: '#059eff', jaune: '#ffbf00', marron: '#8f3400', bleuClair: '#6cc6ff', gris: '#aaaaaa', vert: '#28a745', '#c9d0dd': '#cfcfcf'} %}
             <div class="repartition">
                 <div class="repartition__anneau">
                     <canvas data-graphique="{{ {type: 'anneau', libelles: repartition|column('libelle'), valeurs: repartition|column('nombre'), couleurs: palette|slice(0, repartition|length)}|json_encode }}"></canvas>
@@ -158,11 +158,11 @@
     <section class="carte">
         <div class="carte__entete">
             <h2><i data-lucide="user-round"></i>Annonceurs les plus consultés</h2>
-            <a class="lien-voir" href="{{ path('admin_agents') }}">Voir tout <i data-lucide="arrow-right"></i></a>
+            <a class="lien-voir" href="{{ path('admin_annonceurs') }}">Voir tout <i data-lucide="arrow-right"></i></a>
         </div>
         <div class="tableau-conteneur" style="padding: 10px 0 8px">
             <table class="tableau">
-                <thead><tr><th>Annonceur</th><th>Rôle</th><th class="nombre">Annonces</th><th class="nombre">Vues</th><th>Statut</th></tr></thead>
+                <thead><tr><th>Annonceur</th><th class="nombre">Annonces</th><th class="nombre">Vues</th><th>Statut</th></tr></thead>
                 <tbody>
                 {% for u in meilleursAnnonceurs %}
                     <tr>
@@ -170,13 +170,12 @@
                             {% if u.avatar %}<img class="avatar" src="{{ u.avatar }}" alt="">{% else %}<span class="avatar">{{ (u.prenom ~ ' ' ~ u.nom)|initiales }}</span>{% endif %}
                             <span class="personne__nom">{{ u.prenom }} {{ u.nom }}</span>
                         </a></td>
-                        <td class="texte-gris">{{ u.role == 'agent' ? 'Agent' : 'Propriétaire' }}</td>
                         <td class="nombre">{{ u.annonces }}</td>
                         <td class="nombre">{{ u.vues|number_format(0, ',', ' ') }}</td>
                         <td>{% if u.verifie %}<span class="pastille pastille--vert">Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="5" class="vide">Aucun agent ni propriétaire inscrit.</td></tr>
+                    <tr><td colspan="4" class="vide">Aucun annonceur pour le moment.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>

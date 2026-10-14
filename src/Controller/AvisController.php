@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Dto\AvisDto;
 use App\Entity\Annonce;
 use App\Entity\Utilisateur;
+use App\Repository\AnnonceRepository;
 use App\Security\Voter\AnnonceVoter;
 use App\Service\Notation;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -59,9 +60,9 @@ class AvisController extends AbstractController
 
     // ─── Avis sur un agent ou un propriétaire ────────────────────────────────
     #[Route('/agents/{id}/avis', name: 'agent_liste', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function listeAgent(#[MapEntity(id: 'id')] Utilisateur $agent, Notation $notation, #[CurrentUser] ?Utilisateur $utilisateur = null): JsonResponse
+    public function listeAgent(#[MapEntity(id: 'id')] Utilisateur $agent, Notation $notation, AnnonceRepository $annonces, #[CurrentUser] ?Utilisateur $utilisateur = null): JsonResponse
     {
-        $this->verifierAnnonceur($agent);
+        $this->verifierAnnonceur($agent, $annonces);
 
         return $this->json($notation->presenter(null, $agent, $utilisateur));
     }
@@ -73,8 +74,9 @@ class AvisController extends AbstractController
         #[MapRequestPayload(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)] AvisDto $donnees,
         #[CurrentUser] Utilisateur $utilisateur,
         Notation $notation,
+        AnnonceRepository $annonces,
     ): JsonResponse {
-        $this->verifierAnnonceur($agent);
+        $this->verifierAnnonceur($agent, $annonces);
         [, $cree] = $notation->enregistrer($utilisateur, null, $agent, $donnees);
 
         return $this->json($notation->presenter(null, $agent, $utilisateur), $cree ? Response::HTTP_CREATED : Response::HTTP_OK);
@@ -89,10 +91,10 @@ class AvisController extends AbstractController
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
-    /** Seuls les agents et propriétaires (ceux qui publient) peuvent être notés. */
-    private function verifierAnnonceur(Utilisateur $agent): void
+    /** Seul un annonceur (un compte actif qui a déjà publié une annonce) peut être noté. */
+    private function verifierAnnonceur(Utilisateur $agent, AnnonceRepository $annonces): void
     {
-        if (!$agent->getRole()->peutPublier() || !$agent->isEstActif()) {
+        if (!$agent->isEstActif() || null === $annonces->findOneBy(['publiePar' => $agent])) {
             throw new NotFoundHttpException('Agent introuvable.');
         }
     }

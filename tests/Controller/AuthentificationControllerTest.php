@@ -123,12 +123,11 @@ final class AuthentificationControllerTest extends WebTestCase
     {
         $reponse = $this->inscrire([
             'prenom' => 'Ama', 'nom' => 'Koffi', 'region' => 'centrale', 'motDePasse' => 'secret123',
-            'role' => 'agent', 'email' => 'Ama@Exemple.tg', 'telephone' => '90 00 00 02', 'indicatifPays' => '+228',
+            'email' => 'Ama@Exemple.tg', 'telephone' => '90 00 00 02', 'indicatifPays' => '+228',
             'whatsapp' => '99 00 00 02',
         ]);
 
         self::assertResponseStatusCodeSame(201);
-        self::assertSame('agent', $reponse['utilisateur']['role']);
         self::assertSame('ama@exemple.tg', $reponse['utilisateur']['email']);
         self::assertSame('+228', $reponse['utilisateur']['indicatifPays']);
         self::assertSame('99 00 00 02', $reponse['utilisateur']['whatsapp']);
@@ -169,12 +168,15 @@ final class AuthentificationControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
     }
 
-    public function testOnNePeutPasSInscrireAdministrateur(): void
+    public function testLeRoleEnvoyeALInscriptionEstIgnore(): void
     {
-        $reponse = $this->inscrire(['prenom' => 'Pirate', 'nom' => 'Admin', 'region' => 'maritime', 'motDePasse' => 'secret123', 'role' => 'admin']);
+        // Anciennes versions de l'application : elles envoient encore un type de compte.
+        foreach (['admin', 'agent'] as $role) {
+            $reponse = $this->inscrire(['prenom' => 'Pirate', 'nom' => ucfirst($role), 'region' => 'maritime', 'motDePasse' => 'secret123', 'role' => $role]);
 
-        self::assertResponseStatusCodeSame(422);
-        self::assertContains('role', array_column($reponse['violations'], 'propertyPath'));
+            self::assertResponseStatusCodeSame(201);
+            self::assertSame('locataire', $reponse['utilisateur']['role'], 'même compte pour tous, jamais administrateur');
+        }
     }
 
     public function testEmailDejaUtiliseRefuse(): void

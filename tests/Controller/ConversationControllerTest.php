@@ -52,6 +52,7 @@ final class ConversationControllerTest extends WebTestCase
         self::assertSame(1, $listeAgent[0]['nonLus']);
         self::assertSame('Ama', $listeAgent[0]['interlocuteur']['prenom']);
         self::assertNull($listeAgent[0]['interlocuteur']['telephone'], 'le numéro du locataire n\'est jamais communiqué');
+        self::assertFalse($listeAgent[0]['interlocuteur']['estAnnonceur'], 'le demandeur n\'est pas l\'annonceur');
         self::assertFalse($listeAgent[0]['dernierMessage']['deMoi']);
 
         // … l'ouvre (il devient lu) et répond.

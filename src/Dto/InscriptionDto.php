@@ -3,7 +3,6 @@
 namespace App\Dto;
 
 use App\Enum\Region;
-use App\Enum\RoleUtilisateur;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /** Données envoyées par l'application pour créer un compte (POST /api/auth/inscription). */
@@ -24,13 +23,6 @@ final readonly class InscriptionDto
         #[Assert\NotBlank(message: 'Le mot de passe est requis.')]
         #[Assert\Length(min: 6, max: 4096, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.')]
         public string $motDePasse = '',
-
-        /** Locataire par défaut ; le rôle administrateur ne peut pas être choisi à l'inscription. */
-        #[Assert\Choice(
-            choices: [RoleUtilisateur::LOCATAIRE, RoleUtilisateur::PROPRIETAIRE, RoleUtilisateur::AGENT],
-            message: 'Ce type de compte n\'est pas autorisé.',
-        )]
-        public RoleUtilisateur $role = RoleUtilisateur::LOCATAIRE,
 
         #[Assert\Email(message: 'Email invalide.')]
         #[Assert\Length(max: 180)]

@@ -44,10 +44,11 @@ final class StatistiqueControllerTest extends WebTestCase
         self::assertSame('vendu', $stats['annonces'][1]['statut']);
     }
 
-    public function testReserveAuxAnnonceurs(): void
+    public function testReserveAuxComptesConnectes(): void
     {
-        $this->requeteJson('GET', '/api/statistiques', jeton: $this->jetonPour($this->creerUtilisateur('ama.koffi')));
-        self::assertResponseStatusCodeSame(403);
+        $stats = $this->requeteJson('GET', '/api/statistiques', jeton: $this->jetonPour($this->creerUtilisateur('ama.koffi')));
+        self::assertResponseIsSuccessful();
+        self::assertSame(0, $stats['totaux']['annonces'], 'un membre sans annonce a des statistiques vides');
 
         $this->requeteJson('GET', '/api/statistiques');
         self::assertResponseStatusCodeSame(401);

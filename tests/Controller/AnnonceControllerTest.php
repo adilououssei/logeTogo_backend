@@ -176,12 +176,12 @@ final class AnnonceControllerTest extends WebTestCase
         self::assertNull($reponse['totalEntree']);
     }
 
-    public function testLocataireEtVisiteurNePeuventPasPublier(): void
+    public function testToutCompteConnectePeutPublierMaisPasUnVisiteur(): void
     {
-        $locataire = $this->creerUtilisateur('ama.koffi');
+        $membre = $this->creerUtilisateur('ama.koffi');
 
-        $this->requeteJson('POST', '/api/annonces', $this->donneesAnnonce(), $this->jetonPour($locataire));
-        self::assertResponseStatusCodeSame(403);
+        $this->requeteJson('POST', '/api/annonces', $this->donneesAnnonce(), $this->jetonPour($membre));
+        self::assertResponseStatusCodeSame(201, 'plus de rôle réservé à la publication');
 
         $visiteur = $this->requeteJson('POST', '/api/annonces', $this->donneesAnnonce());
         self::assertResponseStatusCodeSame(401);
@@ -256,7 +256,10 @@ final class AnnonceControllerTest extends WebTestCase
         self::assertSame(['B', 'A'], array_column($reponse, 'titre'));
 
         $this->requeteJson('GET', '/api/annonces/mes-annonces', jeton: $this->jetonPour($this->creerUtilisateur('ama.koffi')));
-        self::assertResponseStatusCodeSame(403);
+        self::assertResponseIsSuccessful();
+
+        $this->requeteJson('GET', '/api/annonces/mes-annonces');
+        self::assertResponseStatusCodeSame(401);
     }
 
     /** @return array<string, mixed> */

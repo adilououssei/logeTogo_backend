@@ -36,7 +36,7 @@ class RapportController extends AbstractController
             $sortie = fopen('php://output', 'w');
             fwrite($sortie, "\xEF\xBB\xBF"); // BOM : accents corrects dans Excel
             if ('utilisateurs' === $type) {
-                fputcsv($sortie, ['Identifiant', 'Prénom', 'Nom', 'Rôle', 'Région', 'Email', 'Téléphone', 'Vérifié', 'Actif', 'Inscription'], ';', '"', '');
+                fputcsv($sortie, ['Identifiant', 'Prénom', 'Nom', 'Type', 'Région', 'Email', 'Téléphone', 'Vérifié', 'Actif', 'Inscription'], ';', '"', '');
                 foreach ($em->getRepository(Utilisateur::class)->findBy([], ['dateInscription' => 'DESC']) as $u) {
                     fputcsv($sortie, [
                         $u->getIdentifiant(), $u->getPrenom(), $u->getNom(), $u->getRole()->libelle(), $u->getRegion()?->libelle(),

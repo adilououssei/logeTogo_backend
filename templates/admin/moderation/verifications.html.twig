@@ -20,7 +20,7 @@
         {% set u = d.utilisateur %}
         <section class="carte">
             <div class="carte__entete">
-                {{ m.personne(u, u.role.libelle ~ ' · ' ~ (u.region ? u.region.libelle : '')) }}
+                {{ m.personne(u, u.region ? u.region.libelle : '') }}
                 <span class="texte-gris texte-petit" style="margin-left:auto">Reçue {{ d.dateDemande|il_y_a }}</span>
             </div>
             <div class="carte__corps">

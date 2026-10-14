@@ -20,7 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Rien n'est publié ni conservé : l'enregistrement est supprimé après traitement.
  */
 #[Route('/api/annonces/brouillon-vocal', name: 'api_brouillon_vocal', format: 'json')]
-#[IsGranted(AnnonceVoter::PUBLIER, message: 'Réservé aux agents et propriétaires.')]
+#[IsGranted(AnnonceVoter::PUBLIER, message: 'Connectez-vous pour publier une annonce.')]
 class BrouillonVocalController extends AbstractController
 {
     private const TYPES_AUDIO = ['audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg', 'audio/3gpp', 'video/mp4', 'video/3gpp', 'video/webm', 'application/octet-stream'];

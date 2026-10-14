@@ -28,7 +28,8 @@
 {% endmacro %}
 
 {% macro role(r) %}
-    {% set couleurs = {locataire: 'bleu', agent: 'marron', proprietaire: 'jaune', admin: 'gris'} %}
+    {# Anciens rôles (locataire, agent, propriétaire) : plus de distinction, tous « Membre ». #}
+    {% set couleurs = {locataire: 'bleu', agent: 'bleu', proprietaire: 'bleu', admin: 'gris'} %}
     <span class="pastille pastille--{{ couleurs[r.value] }}">{{ r.libelle }}</span>
 {% endmacro %}
 

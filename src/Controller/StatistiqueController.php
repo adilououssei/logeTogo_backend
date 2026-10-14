@@ -23,7 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * les mises en favori et les personnes qui l'ont contacté via la messagerie.
  */
 #[Route('/api/statistiques', name: 'api_statistiques_', format: 'json')]
-#[IsGranted(AnnonceVoter::PUBLIER, message: 'Réservé aux agents et propriétaires.')]
+#[IsGranted(AnnonceVoter::PUBLIER, message: 'Connectez-vous pour publier une annonce.')]
 class StatistiqueController extends AbstractController
 {
     #[Route('', name: 'mes_annonces', methods: ['GET'])]

@@ -63,7 +63,7 @@ final class AdminTest extends WebTestCase
         $this->em()->flush();
         $this->connecterAdmin();
 
-        foreach (['/admin', '/admin/utilisateurs', '/admin/utilisateurs?role=agent&q=kofi', '/admin/agents', '/admin/biens', '/admin/biens?statut=disponible&type=chambre',
+        foreach (['/admin', '/admin/utilisateurs', '/admin/utilisateurs?type=annonceur&q=kofi', '/admin/utilisateurs?type=membre', '/admin/utilisateurs?type=admin', '/admin/annonceurs', '/admin/biens', '/admin/biens?statut=disponible&type=chambre',
             '/admin/biens/'.$annonce->getId(), '/admin/utilisateurs/'.$agent->getId(), '/admin/signalements', '/admin/signalements?statut=tous',
             '/admin/verifications', '/admin/rapports', '/admin/parametres', '/admin/recherche?q=kofi'] as $url) {
             $this->client->request('GET', $url);
@@ -131,6 +131,7 @@ final class AdminTest extends WebTestCase
     public function testSuspendreEtReactiverUnCompte(): void
     {
         $agent = $this->avecMotDePasse($this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT), 'secret123');
+        $this->creerAnnonce($agent); // il apparaît ainsi dans la liste des annonceurs
         $this->connecterAdmin();
 
         $this->envoyer('/admin/utilisateurs', '/admin/utilisateurs/'.$agent->getId().'/etat');
@@ -141,8 +142,27 @@ final class AdminTest extends WebTestCase
         $this->envoyer('/admin/utilisateurs', '/admin/utilisateurs/'.$agent->getId().'/etat');
         self::assertTrue($this->recharger($agent)->isEstActif());
 
-        $this->envoyer('/admin/agents', '/admin/utilisateurs/'.$agent->getId().'/badge');
+        $this->envoyer('/admin/annonceurs', '/admin/utilisateurs/'.$agent->getId().'/badge');
         self::assertTrue($this->recharger($agent)->isVerifie());
+    }
+
+    public function testAnnonceursSontLesMembresQuiOntPublie(): void
+    {
+        $this->creerAnnonce($this->creerUtilisateur('kofi.mensah'));
+        $this->creerUtilisateur('ama.koffi'); // membre sans annonce
+        $this->connecterAdmin();
+
+        $this->client->request('GET', '/admin/annonceurs');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.tableau', 'Kofi Mensah');
+        self::assertSelectorTextNotContains('.tableau', 'Ama Koffi');
+
+        $this->client->request('GET', '/admin/utilisateurs?type=membre');
+        self::assertSelectorTextContains('.tableau', 'Ama Koffi');
+
+        $this->client->request('GET', '/admin');
+        self::assertSelectorTextContains('.grille--indicateurs', 'Membres');
+        self::assertSelectorTextContains('.grille--indicateurs', 'Annonceurs');
     }
 
     public function testExaminerUneVerificationDIdentite(): void
