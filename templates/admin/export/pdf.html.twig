@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>LogeTogo – {{ intitule }}</title>
+    <style>
+        /* Charte LogeTogo : marron #8F3400, bleu #059EFF, jaune #FFBF00. */
+        @page { margin: 24mm 12mm 16mm; }      /* place pour l'en-tête et le pied (ExportAdmin::pdf) */
+        @page :first { margin: 0; }             /* page de garde pleine page */
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 8pt; color: #1a1a1a; margin: 0; }
+
+        /* ─── Page de garde ─── */
+        .garde { position: relative; width: 297mm; height: 209mm; overflow: hidden; page-break-after: always; }
+        .garde__logo { position: absolute; left: 0; top: 0; width: 118mm; height: 209mm; background: #fff; }
+        .garde__logo img { position: absolute; left: 22mm; top: 62mm; width: 74mm; }
+        .garde__bandes { position: absolute; left: 0; bottom: 0; width: 118mm; }
+        .garde__bandes div { height: 5mm; }
+        .garde__panneau { position: absolute; left: 118mm; top: 0; width: 179mm; height: 209mm; background: #8F3400; color: #fff; }
+        .garde__contenu { position: absolute; left: 18mm; right: 18mm; top: 34mm; }
+        .garde__etiquette { color: #FFBF00; font-size: 9pt; font-weight: bold; letter-spacing: 2pt; }
+        .garde__titre { font-size: 28pt; font-weight: bold; margin: 5mm 0 3mm; line-height: 1.15; }
+        .garde__sous-titre { font-size: 10.5pt; color: #f6ebe4; }
+        .garde__trait { width: 26mm; height: 1.6mm; background: #FFBF00; margin: 9mm 0; }
+        .chiffres { width: 100%; border-collapse: separate; border-spacing: 2.5mm 0; margin-left: -2.5mm; }
+        .chiffres td { background: #6f2700; padding: 4mm 3mm; border-top: 1.2mm solid #FFBF00; vertical-align: top; }
+        .chiffres td:nth-child(even) { border-top-color: #059EFF; }
+        .chiffre__valeur { font-size: 17pt; font-weight: bold; }
+        .chiffre__libelle { font-size: 7.5pt; color: #f6ebe4; margin-top: 1mm; }
+        .garde__infos { position: absolute; left: 18mm; right: 18mm; bottom: 16mm; font-size: 8.5pt; color: #f6ebe4; }
+        .garde__infos table { width: 100%; border-collapse: collapse; }
+        .garde__infos td { padding: 1.2mm 0; vertical-align: top; }
+        .garde__infos td.libelle { width: 34mm; color: #FFBF00; font-weight: bold; }
+        .garde__confidentiel { margin-top: 5mm; padding-top: 3mm; border-top: 0.3mm solid #b84200; font-size: 7.5pt; color: #e8cbbb; }
+
+        /* ─── Tableau ─── */
+        .intro { margin: 0 0 4mm; }
+        .intro h2 { font-size: 13pt; color: #8F3400; margin: 0; }
+        .intro p { margin: 1mm 0 0; color: #666; }
+        .donnees { width: 100%; border-collapse: collapse; }
+        .donnees thead { display: table-header-group; } /* en-tête répété sur chaque page */
+        .donnees th { background: #8F3400; color: #fff; text-align: left; padding: 5px 4px; font-size: 7.5pt; border-bottom: 2px solid #FFBF00; }
+        .donnees td { padding: 4px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+        .donnees tr:nth-child(even) td { background: #f6ebe4; }
+        .donnees tr { page-break-inside: avoid; }
+        .nombre { text-align: right; white-space: nowrap; }
+        .vide { text-align: center; color: #666; padding: 16px; }
+    </style>
+</head>
+<body>
+    <div class="garde">
+        <div class="garde__logo">
+            <img src="{{ logo }}" alt="LogeTogo">
+            <div class="garde__bandes">
+                <div style="background:#FFBF00"></div>
+                <div style="background:#059EFF"></div>
+            </div>
+        </div>
+        <div class="garde__panneau">
+            <div class="garde__contenu">
+                <div class="garde__etiquette">RAPPORT D'ADMINISTRATION</div>
+                <div class="garde__titre">{{ intitule }}</div>
+                <div class="garde__sous-titre">Plateforme LogeTogo · location et vente de logements au Togo</div>
+                <div class="garde__trait"></div>
+                <table class="chiffres">
+                    <tr>
+                    {% for libelle, valeur in resume %}
+                        <td>
+                            <div class="chiffre__valeur">{{ valeur|number_format(0, ',', ' ') }}</div>
+                            <div class="chiffre__libelle">{{ libelle }}</div>
+                        </td>
+                    {% endfor %}
+                    </tr>
+                </table>
+            </div>
+            <div class="garde__infos">
+                <table>
+                    <tr><td class="libelle">Généré le</td><td>{{ genereLe|format_datetime(pattern: "d MMMM y 'à' HH:mm", locale: 'fr') }}</td></tr>
+                    {% if auteur %}<tr><td class="libelle">Par</td><td>{{ auteur }} (administrateur)</td></tr>{% endif %}
+                    <tr><td class="libelle">Contenu</td><td>{{ lignes|length }} enregistrement{{ lignes|length > 1 ? 's' }}, du plus récent au plus ancien</td></tr>
+                </table>
+                <div class="garde__confidentiel">
+                    Document confidentiel, réservé à l'équipe LogeTogo. Il contient des données personnelles :
+                    ne pas diffuser, et le supprimer une fois qu'il n'est plus utile.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="intro">
+        <h2>{{ intitule }}</h2>
+        <p>{{ lignes|length }} enregistrement{{ lignes|length > 1 ? 's' }}</p>
+    </div>
+    <table class="donnees">
+        <thead>
+            <tr>{% for c in colonnes %}<th{{ loop.index0 in nombres ? ' class="nombre"' }}>{{ c }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+        {% for ligne in lignes %}
+            <tr>
+            {% for valeur in ligne %}
+                {% if loop.index0 in nombres and valeur is not null %}
+                    <td class="nombre">{{ valeur|number_format(0, ',', ' ') }}</td>
+                {% else %}
+                    <td>{{ valeur ?? '—' }}</td>
+                {% endif %}
+            {% endfor %}
+            </tr>
+        {% else %}
+            <tr><td class="vide" colspan="{{ colonnes|length }}">Aucune donnée.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

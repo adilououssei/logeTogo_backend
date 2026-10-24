@@ -9,7 +9,10 @@
         <h1>Utilisateurs</h1>
         <p>Tous les comptes inscrits sur LogeTogo : chaque membre peut publier des annonces.</p>
     </div>
-    <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs'}) }}"><i data-lucide="download"></i>Exporter (CSV)</a>
+    <div class="en-ligne">
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs', format: 'excel'}) }}"><i data-lucide="file-spreadsheet"></i>Excel</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs', format: 'pdf'}) }}"><i data-lucide="file-text"></i>PDF</a>
+    </div>
 </div>
 
 <section class="carte">

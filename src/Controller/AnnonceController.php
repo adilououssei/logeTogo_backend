@@ -35,20 +35,28 @@ class AnnonceController extends AbstractController
     private const GROUPES_LISTE = ['annonce:liste', 'annonceur:public'];
     private const GROUPES_DETAIL = ['annonce:detail', 'annonceur:public'];
     private const GROUPES_PRIVES = ['annonce:prive', 'annonceur:prive'];
+    /** Connectés seulement : coordonnées GPS dans la liste (carte, « à 2 km » calculé par l'application). */
+    private const GROUPE_POSITION = 'annonce:position';
     /** Réservé à l'auteur de l'annonce : rappels de disponibilité. */
     private const GROUPE_ANNONCEUR = 'annonce:annonceur';
 
     /**
      * Liste paginée : {"elements": [...], "total": 42, "page": 1, "parPage": 20, "pages": 3}.
      * Biens disponibles uniquement. Filtres : recherche, region, quartier, typeBien, typeTransaction, prixMin, prixMax, regionPrioritaire, page, parPage.
+     * Connecté : coordonnées GPS des biens, et avec latitude/longitude, tri « proches ».
      */
     #[Route('', name: 'liste', methods: ['GET'])]
     public function liste(
         AnnonceRepository $annonces,
         Notation $notation,
         #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)] FiltresAnnoncesDto $filtres = new FiltresAnnoncesDto(),
+        #[CurrentUser] ?Utilisateur $utilisateur = null,
     ): JsonResponse {
-        $resultats = $annonces->rechercher($filtres);
+        // Visiteur : la position est ignorée, sinon le classement trahirait l'emplacement des biens.
+        $position = null !== $utilisateur && null !== $filtres->latitude && null !== $filtres->longitude
+            ? ['latitude' => $filtres->latitude, 'longitude' => $filtres->longitude]
+            : null;
+        $resultats = $annonces->rechercher($filtres, $position);
         $total = \count($resultats);
         $elements = iterator_to_array($resultats, false);
         $notation->completer($elements);
@@ -59,7 +67,7 @@ class AnnonceController extends AbstractController
             'page' => $filtres->page,
             'parPage' => $filtres->parPage,
             'pages' => (int) ceil($total / $filtres->parPage),
-        ], context: ['groups' => self::GROUPES_LISTE]);
+        ], context: ['groups' => null !== $utilisateur ? [...self::GROUPES_LISTE, self::GROUPE_POSITION] : self::GROUPES_LISTE]);
     }
 
     /** Annonces de l'agent ou du propriétaire connecté, tous statuts confondus (tableaux de bord). */

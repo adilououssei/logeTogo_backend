@@ -3,8 +3,10 @@ FROM php:8.4-fpm-alpine AS php
 
 # Extensions PHP dont Symfony et LogeTogo ont besoin.
 # ffmpeg : convertit l'audio des téléphones (M4A) en WAV pour Whisper (annonce vocale).
-RUN apk add --no-cache icu-dev libzip-dev ffmpeg \
-    && docker-php-ext-install pdo_mysql intl zip opcache
+# gd : exigé par PhpSpreadsheet (exports Excel de l'administration).
+RUN apk add --no-cache icu-dev libzip-dev ffmpeg libpng-dev libjpeg-turbo-dev freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql intl zip opcache gd
 
 # Composer : on récupère seulement son programme dans l'image officielle de Composer.
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

@@ -23,10 +23,13 @@ class AnnonceRepository extends ServiceEntityRepository
     /**
      * Recherche publique : annonces disponibles par défaut (jamais les suspendues),
      * la région prioritaire en premier puis les plus récentes.
+     * Avec $position et le tri « proches » : les plus proches d'abord (sans GPS : à la fin).
+     *
+     * @param array{latitude: float, longitude: float}|null $position
      *
      * @return Paginator<Annonce>
      */
-    public function rechercher(FiltresAnnoncesDto $filtres): Paginator
+    public function rechercher(FiltresAnnoncesDto $filtres, ?array $position = null): Paginator
     {
         $qb = $this->createQueryBuilder('a')
             ->addSelect('m', 'p')
@@ -58,7 +61,18 @@ class AnnonceRepository extends ServiceEntityRepository
             $qb->andWhere('a.prix <= :prixMax')->setParameter('prixMax', $filtres->prixMax);
         }
 
-        if (null !== $filtres->regionPrioritaire) {
+        if ('proches' === $filtres->tri && null !== $position) {
+            // Distance approchée (projection plane), suffisante pour classer à l'échelle d'un pays :
+            // une longitude « vaut » cos(latitude) fois une latitude.
+            $qb->addSelect('CASE WHEN a.localisation.latitude IS NULL THEN 1 ELSE 0 END AS HIDDEN sansPosition')
+                ->addSelect('(a.localisation.latitude - :lat) * (a.localisation.latitude - :lat)
+                    + (a.localisation.longitude - :lng) * (a.localisation.longitude - :lng) * :cos2 AS HIDDEN ecart')
+                ->setParameter('lat', $position['latitude'])
+                ->setParameter('lng', $position['longitude'])
+                ->setParameter('cos2', cos(deg2rad($position['latitude'])) ** 2)
+                ->addOrderBy('sansPosition', 'ASC')
+                ->addOrderBy('ecart', 'ASC');
+        } elseif (null !== $filtres->regionPrioritaire) {
             $qb->addSelect('CASE WHEN a.localisation.region = :regionPrioritaire THEN 0 ELSE 1 END AS HIDDEN priorite')
                 ->setParameter('regionPrioritaire', $filtres->regionPrioritaire)
                 ->addOrderBy('priorite', 'ASC');

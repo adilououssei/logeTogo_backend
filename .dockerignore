@@ -22,5 +22,3 @@ tests
 .phpunit.cache
 phpunit.xml
 .env.test
-
-JWT_PASSPHRASE=ac82dd304b1122a7c4e19d20f6a720c7fa293793bedce260e8f2574ac03236a3

@@ -2,11 +2,14 @@
 
 namespace App\Controller;
 
+use App\Dto\ConnexionGoogleDto;
 use App\Dto\DemandeCodeDto;
 use App\Dto\InscriptionDto;
 use App\Dto\ReinitialisationMotDePasseDto;
 use App\Dto\VerificationCodeDto;
 use App\Entity\Utilisateur;
+use App\Service\ConnexionGoogle;
+use App\Service\IdentiteGoogle;
 use App\Service\InscriptionUtilisateur;
 use App\Service\ReinitialisationMotDePasse;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
@@ -46,7 +49,34 @@ class AuthentificationController extends AbstractController
     }
 
     /**
-     * Connexion : {"identifiant": "kofi.mensah", "motDePasse": "..."}.
+     * « Continuer avec Google » : {"jeton": "<idToken Google>"}.
+     *  - compte trouvé (ou créé, si la région est envoyée) → même réponse qu'une connexion ;
+     *  - nouveau compte sans région → {"inscriptionRequise": true, "prenom", "nom", "email"} :
+     *    l'application affiche « Compléter votre profil » puis renvoie le jeton avec la région.
+     */
+    #[Route('/google', name: 'google', methods: ['POST'])]
+    public function google(
+        #[MapRequestPayload(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)] ConnexionGoogleDto $donnees,
+        ConnexionGoogle $connexionGoogle,
+        #[Autowire(service: 'lexik_jwt_authentication.handler.authentication_success')]
+        AuthenticationSuccessHandler $connexionReussie,
+    ): Response {
+        $resultat = $connexionGoogle->connecter($donnees);
+
+        if ($resultat instanceof IdentiteGoogle) {
+            return $this->json([
+                'inscriptionRequise' => true,
+                'prenom' => $resultat->prenom,
+                'nom' => $resultat->nom,
+                'email' => $resultat->email,
+            ]);
+        }
+
+        return $connexionReussie->handleAuthenticationSuccess($resultat);
+    }
+
+    /**
+     * Connexion : {"identifiant": "kofi.mensah" ou "kofi@exemple.tg", "motDePasse": "..."}.
      * Traitée entièrement par le pare-feu (json_login) ; ce code n'est jamais exécuté.
      */
     #[Route('/connexion', name: 'connexion', methods: ['POST'])]

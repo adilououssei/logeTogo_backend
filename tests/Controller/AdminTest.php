@@ -77,8 +77,20 @@ final class AdminTest extends WebTestCase
         $this->client->request('GET', '/admin/recherche?q=kofi');
         self::assertSelectorTextContains('.contenu', 'Kofi Mensah');
 
-        $this->client->request('GET', '/admin/rapports/export/biens');
-        self::assertResponseHeaderSame('Content-Type', 'text/csv; charset=UTF-8');
+        // Exports : Excel et PDF uniquement (plus de CSV).
+        foreach (['utilisateurs', 'biens'] as $type) {
+            $this->client->request('GET', '/admin/rapports/export/'.$type.'/excel');
+            self::assertResponseIsSuccessful();
+            self::assertResponseHeaderSame('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            self::assertStringContainsString('.xlsx', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+
+            $this->client->request('GET', '/admin/rapports/export/'.$type.'/pdf');
+            self::assertResponseIsSuccessful();
+            self::assertResponseHeaderSame('Content-Type', 'application/pdf');
+            self::assertStringStartsWith('%PDF', (string) $this->client->getResponse()->getContent());
+        }
+        $this->client->request('GET', '/admin/rapports/export/biens/csv');
+        self::assertResponseStatusCodeSame(404);
     }
 
     public function testSuspendreUneAnnonceSignalee(): void

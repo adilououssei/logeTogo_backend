@@ -18,8 +18,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * Compte de l'application : locataire, propriétaire, agent ou administrateur.
  *
- * La connexion se fait par identifiant (« prenom.nom », généré à l'inscription)
- * et mot de passe ; l'email et le téléphone sont optionnels.
+ * La connexion se fait par identifiant (« prenom.nom », généré à l'inscription) ou email,
+ * et mot de passe ; ou avec Google. L'email et le téléphone sont optionnels.
  */
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -84,6 +84,10 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     /** Mot de passe haché (jamais en clair). */
     #[ORM\Column]
     private ?string $motDePasse = null;
+
+    /** Compte Google lié (« sub » du jeton Google) : connexion par « Continuer avec Google ». */
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
+    private ?string $googleId = null;
 
     #[ORM\Column(length: 500, nullable: true)]
     #[Groups(['utilisateur:lecture', 'annonceur:public'])]
@@ -276,6 +280,18 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function setMotDePasse(string $motDePasseHache): static
     {
         $this->motDePasse = $motDePasseHache;
+
+        return $this;
+    }
+
+    public function getGoogleId(): ?string
+    {
+        return $this->googleId;
+    }
+
+    public function setGoogleId(?string $googleId): static
+    {
+        $this->googleId = $googleId;
 
         return $this;
     }

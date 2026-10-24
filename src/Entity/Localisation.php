@@ -38,12 +38,12 @@ class Localisation
 
     #[ORM\Column(nullable: true)]
     #[Assert\Range(min: -90, max: 90)]
-    #[Groups(['annonce:prive'])]
+    #[Groups(['annonce:prive', 'annonce:position'])]
     private ?float $latitude = null;
 
     #[ORM\Column(nullable: true)]
     #[Assert\Range(min: -180, max: 180)]
-    #[Groups(['annonce:prive'])]
+    #[Groups(['annonce:prive', 'annonce:position'])]
     private ?float $longitude = null;
 
     public function getRegion(): ?Region

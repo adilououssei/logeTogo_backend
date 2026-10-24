@@ -10,8 +10,10 @@
         <p>Croissance et activité de la plateforme sur les 12 derniers mois.</p>
     </div>
     <div class="en-ligne">
-        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs'}) }}"><i data-lucide="download"></i>Utilisateurs (CSV)</a>
-        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens'}) }}"><i data-lucide="download"></i>Biens (CSV)</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs', format: 'excel'}) }}"><i data-lucide="file-spreadsheet"></i>Utilisateurs (Excel)</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'utilisateurs', format: 'pdf'}) }}"><i data-lucide="file-text"></i>Utilisateurs (PDF)</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens', format: 'excel'}) }}"><i data-lucide="file-spreadsheet"></i>Biens (Excel)</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens', format: 'pdf'}) }}"><i data-lucide="file-text"></i>Biens (PDF)</a>
     </div>
 </div>
 

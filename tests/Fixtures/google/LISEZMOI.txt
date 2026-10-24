@@ -1,0 +1,1 @@
+Clés de TEST uniquement (jetons « Google » signés par les tests). Ne servent nulle part ailleurs.

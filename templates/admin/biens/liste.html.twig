@@ -9,7 +9,10 @@
         <h1>Biens immobiliers</h1>
         <p>Toutes les annonces publiées, quel que soit leur statut.</p>
     </div>
-    <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens'}) }}"><i data-lucide="download"></i>Exporter (CSV)</a>
+    <div class="en-ligne">
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens', format: 'excel'}) }}"><i data-lucide="file-spreadsheet"></i>Excel</a>
+        <a class="bouton bouton--contour" href="{{ path('admin_rapport_export', {type: 'biens', format: 'pdf'}) }}"><i data-lucide="file-text"></i>PDF</a>
+    </div>
 </div>
 
 <section class="carte">

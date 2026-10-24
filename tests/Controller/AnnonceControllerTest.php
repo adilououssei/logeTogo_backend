@@ -97,6 +97,33 @@ final class AnnonceControllerTest extends WebTestCase
         self::assertSame(['Annonce 3', 'Annonce 2'], array_column($page2['elements'], 'titre'));
     }
 
+    public function testTriParProximiteEtGpsReservesAuxConnectes(): void
+    {
+        $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);
+        $positions = ['Proche' => [6.2, 1.21], 'Moyen' => [6.13, 1.25], 'Sans GPS' => [null, null], 'Kara' => [9.55, 1.19]];
+        foreach ($positions as $titre => [$lat, $lng]) {
+            $this->creerAnnonce($agent, ['titre' => $titre])->getLocalisation()->setLatitude($lat)->setLongitude($lng);
+        }
+        $this->em()->flush();
+        // Position de l'utilisateur : université de Lomé.
+        $url = '/api/annonces?latitude=6.1745&longitude=1.212&tri=proches';
+
+        // Visiteur : position ignorée (ni tri, ni GPS des biens).
+        $visiteur = $this->requeteJson('GET', $url);
+        self::assertResponseIsSuccessful();
+        self::assertSame(['Kara', 'Sans GPS', 'Moyen', 'Proche'], array_column($visiteur['elements'], 'titre'));
+        self::assertArrayNotHasKey('latitude', $visiteur['elements'][0]['localisation']);
+
+        // Connecté : les plus proches d'abord, les biens sans GPS à la fin.
+        $connecte = $this->requeteJson('GET', $url, jeton: $this->jetonPour($this->creerUtilisateur('ama.koffi')));
+        self::assertSame(['Proche', 'Moyen', 'Kara', 'Sans GPS'], array_column($connecte['elements'], 'titre'));
+        self::assertSame(6.2, $connecte['elements'][0]['localisation']['latitude']);
+
+        // Connecté sans position : coordonnées présentes (carte), ordre habituel.
+        $sansPosition = $this->requeteJson('GET', '/api/annonces', jeton: $this->jetonPour($this->creerUtilisateur('edem.agbo')));
+        self::assertSame(1.21, $sansPosition['elements'][3]['localisation']['longitude']);
+    }
+
     public function testDetailVisiteurSansGpsEtConnecteAvecGps(): void
     {
         $agent = $this->creerUtilisateur('kofi.mensah', RoleUtilisateur::AGENT);

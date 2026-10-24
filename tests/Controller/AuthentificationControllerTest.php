@@ -37,6 +37,22 @@ final class AuthentificationControllerTest extends WebTestCase
         self::assertNotContains($connexion['refresh_token'], $stockes);
     }
 
+    public function testConnexionParEmailAvecLeMemeMotDePasse(): void
+    {
+        $this->inscrire(['prenom' => 'Kofi', 'nom' => 'Mensah', 'region' => 'maritime', 'motDePasse' => 'secret123', 'email' => 'kofi@exemple.tg']);
+
+        $connexion = $this->connecter('  Kofi@Exemple.TG ', 'secret123');
+        self::assertResponseIsSuccessful();
+        self::assertSame('kofi.mensah', $connexion['utilisateur']['identifiant']);
+
+        // Le jeton obtenu par email fonctionne comme les autres.
+        $this->requeteJson('GET', '/api/auth/moi', jeton: $connexion['token']);
+        self::assertResponseIsSuccessful();
+
+        $this->connecter('kofi@exemple.tg', 'mauvais');
+        self::assertResponseStatusCodeSame(401);
+    }
+
     public function testRenouvellementDonneUnNouveauJetonSansMotDePasse(): void
     {
         $session = $this->inscrire(['prenom' => 'Kofi', 'nom' => 'Mensah', 'region' => 'maritime', 'motDePasse' => 'secret123']);

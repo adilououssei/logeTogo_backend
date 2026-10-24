@@ -85,7 +85,7 @@ security:
         - { path: ^/admin/connexion$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         # Renouveler et se déconnecter doivent marcher même avec un jeton d'accès expiré.
-        - { path: ^/api/auth/(inscription|connexion|renouveler|deconnexion)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(inscription|connexion|google|renouveler|deconnexion)$, roles: PUBLIC_ACCESS }
         # Mot de passe oublié : demande du code, vérification, nouveau mot de passe.
         - { path: ^/api/auth/mot-de-passe-oublie(/verifier|/reinitialiser)?$, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/, roles: IS_AUTHENTICATED_FULLY }
