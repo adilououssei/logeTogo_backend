@@ -389,11 +389,31 @@ body.barre-reduite .menu__lien { justify-content: center; padding: 12px 0; }
 
 /* Tableaux */
 .tableau { width: 100%; border-collapse: collapse; }
-.tableau th { text-align: left; font-size: 12.5px; font-weight: 600; color: var(--gris-700); background: var(--gris-100); padding: 11px 16px; white-space: nowrap; }
-.tableau td { padding: 12px 16px; border-top: 1px solid var(--gris-100); vertical-align: middle; }
+.tableau th { text-align: left; font-size: 12.5px; font-weight: 600; color: var(--gris-700); background: var(--gris-100); padding: 11px 16px; }
+.tableau td { padding: 12px 16px; border-top: 1px solid var(--gris-100); vertical-align: middle; overflow-wrap: anywhere; }
 .tableau tr:hover td { background: #fafafa; }
 .tableau .nombre { text-align: right; font-variant-numeric: tabular-nums; }
-.tableau-conteneur { overflow-x: auto; }
+/* Pas de défilement horizontal : le tableau tient dans la largeur (texte renvoyé à la ligne,
+   puis présentation en fiches sur les écrans étroits, plus bas). Le menu « ⋮ » peut déborder. */
+.tableau-conteneur { overflow: visible; }
+.tableau .colonne-actions { width: 1%; text-align: right; white-space: nowrap; }
+.tableau .personne { min-width: 0; }
+.tableau .personne > span { min-width: 0; }
+
+/* Menu « ⋮ » des actions d'une ligne */
+.bouton-icone--petit { width: 34px; height: 34px; border-radius: 9px; }
+.bouton-icone--petit svg.lucide { width: 19px; height: 19px; }
+.menu-actions { display: inline-block; }
+.menu-actions__panneau { min-width: 230px; top: calc(100% + 4px); text-align: left; white-space: normal; }
+/* Pas assez de place dessous : le menu s'ouvre vers le haut (classe posée par admin.js). */
+.menu-actions--haut .menu-actions__panneau { top: auto; bottom: calc(100% + 4px); }
+.deroulant__panneau form { margin: 0; }
+button.deroulant__element { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.deroulant__element svg.lucide { width: 17px; height: 17px; flex-shrink: 0; }
+.deroulant__element--danger:hover { background: var(--rouge-pale); }
+.deroulant__separateur { height: 1px; margin: 6px 4px; background: var(--gris-200); }
+.bouton--texte-danger { color: var(--rouge); }
+.bouton--texte-danger:hover { background: var(--rouge-pale); }
 .personne { display: flex; align-items: center; gap: 11px; color: var(--gris-900); }
 .personne:hover { text-decoration: none; }
 .personne__nom { font-weight: 500; }
@@ -545,6 +565,28 @@ form.en-ligne { margin: 0; }
   body.barre-reduite .barre-laterale { width: var(--largeur-barre); }
   .profil-admin__texte { display: none; }
 }
+/*
+ * Tableaux en fiches : une ligne = une carte, chaque cellule précédée du titre de sa colonne
+ * (attribut data-colonne, recopié des en-têtes par admin.js). Le menu « ⋮ » reste en haut à droite.
+ */
+@media (max-width: 900px) {
+  .tableau thead { display: none; }
+  .tableau, .tableau tbody, .tableau tr, .tableau td { display: block; width: 100%; }
+  .tableau tr { position: relative; padding: 12px 16px; border-top: 1px solid var(--gris-200); }
+  .tableau tr:first-child { border-top: 0; }
+  .tableau tr:hover td { background: none; }
+  .tableau td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; border: 0; text-align: right; }
+  .tableau td[data-colonne]::before { content: attr(data-colonne); flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--gris-500); text-align: left; }
+  /* Première cellule = titre de la fiche (nom, titre de l'annonce…) : ses lignes restent empilées. */
+  .tableau td:first-child { display: block; text-align: left; padding-right: 44px; }
+  .tableau td:first-child::before { display: none; }
+  .tableau .nombre { text-align: right; }
+  .tableau td.vide { justify-content: center; text-align: center; }
+  .tableau td.vide::before { display: none; }
+  .tableau .colonne-actions { position: absolute; top: 10px; right: 10px; width: auto; padding: 0; }
+  .tableau .colonne-actions::before { display: none; }
+}
+
 @media (max-width: 700px) {
   .grille--indicateurs, .grille--graphiques, .grille--bas, .grille--deux, .grille--trois { grid-template-columns: 1fr; }
   .entete-page { flex-direction: column; }

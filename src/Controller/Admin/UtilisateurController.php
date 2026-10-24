@@ -10,6 +10,7 @@ use App\Repository\AnnonceRepository;
 use App\Repository\DemandeVerificationRepository;
 use App\Service\Moderation;
 use App\Service\Notation;
+use App\Service\SuppressionCompte;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -20,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * Membres et annonceurs : consultation, suspension, badge « vérifié ».
+ * Membres et annonceurs : consultation, suspension, suppression, badge « vérifié ».
  * Tout le monde peut publier : un « annonceur » est simplement un membre qui a déjà publié une annonce.
  */
 #[Route('/admin', name: 'admin_')]
@@ -69,6 +70,32 @@ class UtilisateurController extends AbstractController
         }
 
         return $this->redirect($requete->headers->get('referer') ?? $this->generateUrl('admin_utilisateur', ['id' => $utilisateur->getId()]));
+    }
+
+    /**
+     * Suppression définitive (contrairement à la suspension) : le compte, ses annonces,
+     * ses messages et ses fichiers — la même suppression que celle demandée depuis l'application.
+     * Un administrateur ne peut supprimer ni son propre compte ni celui d'un autre administrateur.
+     */
+    #[Route('/utilisateurs/{id}/supprimer', name: 'utilisateur_supprimer', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function supprimer(Utilisateur $utilisateur, Request $requete, SuppressionCompte $suppression, #[CurrentUser] Utilisateur $admin): Response
+    {
+        $this->verifierJeton($requete);
+        if ($utilisateur === $admin || RoleUtilisateur::ADMIN === $utilisateur->getRole()) {
+            $this->addFlash('erreur', 'Un compte administrateur ne peut pas être supprimé depuis cette page.');
+
+            return $this->redirectToRoute('admin_utilisateur', ['id' => $utilisateur->getId()]);
+        }
+
+        $nom = $utilisateur->getNomComplet();
+        $suppression->supprimer($utilisateur);
+        $this->addFlash('succes', \sprintf('Le compte de %s a été supprimé définitivement, avec ses annonces et ses messages.', $nom));
+
+        // La fiche du compte n'existe plus : retour à la liste d'où l'on vient (utilisateurs ou annonceurs).
+        $origine = (string) $requete->headers->get('referer');
+        $depuisUneListe = (bool) preg_match('#/admin/(utilisateurs|annonceurs)/?(\?|$)#', $origine);
+
+        return $this->redirect($depuisUneListe ? $origine : $this->generateUrl('admin_utilisateurs'));
     }
 
     /** Accorde ou retire le badge « vérifié » (sans passer par une demande). */

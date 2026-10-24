@@ -38,7 +38,30 @@ document.addEventListener('click', (evenement) => {
   document.querySelectorAll('.deroulant--ouvert').forEach((d) => {
     if (!declencheur || d !== declencheur.closest('.deroulant')) d.classList.remove('deroulant--ouvert');
   });
-  if (declencheur) declencheur.closest('.deroulant').classList.toggle('deroulant--ouvert');
+  if (!declencheur) return;
+  const deroulant = declencheur.closest('.deroulant');
+  const ouvert = deroulant.classList.toggle('deroulant--ouvert');
+
+  // Menu « ⋮ » d'une ligne : s'ouvre vers le haut s'il n'y a pas la place dessous.
+  if (ouvert && deroulant.classList.contains('menu-actions')) {
+    deroulant.classList.remove('menu-actions--haut');
+    const panneau = deroulant.querySelector('.deroulant__panneau');
+    const espaceDessous = window.innerHeight - declencheur.getBoundingClientRect().bottom;
+    if (panneau.offsetHeight + 12 > espaceDessous && declencheur.getBoundingClientRect().top > panneau.offsetHeight + 12) {
+      deroulant.classList.add('menu-actions--haut');
+    }
+  }
+});
+
+// Tableaux en fiches (écrans étroits) : chaque cellule reçoit le titre de sa colonne.
+document.querySelectorAll('table.tableau').forEach((tableau) => {
+  const titres = [...tableau.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+  if (titres.length === 0) return;
+  tableau.querySelectorAll('tbody tr').forEach((ligne) => {
+    [...ligne.children].forEach((cellule, i) => {
+      if (titres[i] && !cellule.hasAttribute('colspan')) cellule.dataset.colonne = titres[i];
+    });
+  });
 });
 
 // Actions sensibles : confirmation avant l'envoi du formulaire.

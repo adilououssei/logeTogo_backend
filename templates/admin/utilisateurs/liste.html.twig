@@ -54,15 +54,7 @@
                     <td class="texte-petit">{{ u.telephone ?? '' }}{% if u.telephone and u.email %}<br>{% endif %}<span class="texte-gris">{{ u.email ?? (u.telephone ? '' : '—') }}</span></td>
                     <td class="texte-gris texte-petit">{{ u.dateInscription|date('d/m/Y') }}</td>
                     <td>{{ m.etat_compte(u) }}</td>
-                    <td style="text-align:right">
-                        {% if u.id != app.user.id and u.role.value != 'admin' %}
-                            {% if u.estActif %}
-                                {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre le compte de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ? Il ne pourra plus se connecter.') }}
-                            {% else %}
-                                {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Réactiver', 'rotate-ccw', 'bouton--succes') }}
-                            {% endif %}
-                        {% endif %}
-                    </td>
+                    <td class="colonne-actions">{{ m.actions_compte(u) }}</td>
                 </tr>
             {% else %}
                 <tr><td colspan="8" class="vide"><i data-lucide="users"></i>Aucun utilisateur ne correspond à ces critères.</td></tr>

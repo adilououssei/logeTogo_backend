@@ -51,12 +51,18 @@
                     <td>{{ m.personne(a.publiePar, a.publiePar.telephone ?? ('@' ~ a.publiePar.identifiant)) }}</td>
                     <td>{{ m.statut_annonce(a.statut) }}</td>
                     <td class="nombre">{{ a.nombreVues }}</td>
-                    <td style="text-align:right">
-                        {% if a.statut.value == 'suspendu' %}
-                            {{ m.action(path('admin_bien_reactiver', {id: a.id}), 'Remettre en ligne', 'rotate-ccw', 'bouton--succes') }}
-                        {% else %}
-                            {{ m.action(path('admin_bien_suspendre', {id: a.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre l\'annonce « ' ~ a.titre ~ ' » ? Elle disparaîtra de l\'application.') }}
-                        {% endif %}
+                    <td class="colonne-actions">
+                        {% set elements %}
+                            {{ m.element_lien(path('admin_bien', {id: a.id}), 'Voir l\'annonce', 'eye') }}
+                            {% if a.statut.value == 'suspendu' %}
+                                {{ m.element_action(path('admin_bien_reactiver', {id: a.id}), 'Remettre en ligne', 'rotate-ccw') }}
+                            {% else %}
+                                {{ m.element_action(path('admin_bien_suspendre', {id: a.id}), 'Suspendre l\'annonce', 'ban', 'Suspendre l\'annonce « ' ~ a.titre ~ ' » ? Elle disparaîtra de l\'application.') }}
+                            {% endif %}
+                            {{ m.separateur_menu() }}
+                            {{ m.element_action(path('admin_bien_supprimer', {id: a.id}), 'Supprimer l\'annonce', 'trash-2', 'Supprimer définitivement l\'annonce « ' ~ a.titre ~ ' » et ses photos ? Cette action est irréversible.', true) }}
+                        {% endset %}
+                        {{ m.menu_actions(elements, 'Actions sur l\'annonce') }}
                     </td>
                 </tr>
             {% else %}

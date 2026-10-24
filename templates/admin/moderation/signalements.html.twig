@@ -36,12 +36,17 @@
                         {% set libelles = {en_attente: 'En attente', traite: 'Annonce suspendue', rejete: 'Rejeté'} %}
                         <span class="pastille pastille--{{ couleurs[s.statut] }}">{{ libelles[s.statut] }}</span>
                     </td>
-                    <td><div class="actions-colonne">
-                        {% if s.estEnAttente %}
-                            {{ m.action(path('admin_signalement_suspendre', {id: s.id}), 'Suspendre l\'annonce', 'ban', 'bouton--danger', 'Suspendre « ' ~ a.titre ~ ' » ? L\'annonce disparaîtra de l\'application et son auteur sera prévenu.') }}
-                            {{ m.action(path('admin_signalement_rejeter', {id: s.id}), 'Rejeter', 'x', 'bouton--contour', 'Rejeter ce signalement ? L\'annonce reste en ligne.') }}
-                        {% endif %}
-                    </div></td>
+                    <td class="colonne-actions">
+                        {% set elements %}
+                            {{ m.element_lien(path('admin_bien', {id: a.id}), 'Voir l\'annonce', 'eye') }}
+                            {% if s.estEnAttente %}
+                                {{ m.element_action(path('admin_signalement_rejeter', {id: s.id}), 'Rejeter le signalement', 'x', 'Rejeter ce signalement ? L\'annonce reste en ligne.') }}
+                                {{ m.separateur_menu() }}
+                                {{ m.element_action(path('admin_signalement_suspendre', {id: s.id}), 'Suspendre l\'annonce', 'ban', 'Suspendre « ' ~ a.titre ~ ' » ? L\'annonce disparaîtra de l\'application et son auteur sera prévenu.', true) }}
+                            {% endif %}
+                        {% endset %}
+                        {{ m.menu_actions(elements, 'Actions sur le signalement') }}
+                    </td>
                 </tr>
             {% else %}
                 <tr><td colspan="6" class="vide"><i data-lucide="flag"></i>{{ statut == 'en_attente' ? 'Aucun signalement en attente.' : 'Aucun signalement.' }}</td></tr>

@@ -33,6 +33,12 @@ class CreerAdminCommand
         #[Argument('Identifiant de connexion, ex. admin.logetogo')] string $identifiant,
     ): int {
         $identifiant = UtilisateurRepository::normaliserIdentifiant($identifiant);
+        // Même format que les identifiants générés à l'inscription (pas d'email : « @ » désigne un email à la connexion).
+        if (!preg_match('/^[a-z0-9]+(\.[a-z0-9]+)*$/', $identifiant)) {
+            $io->error('Identifiant invalide : lettres, chiffres et points seulement, ex. admin.logetogo (pas d\'adresse email).');
+
+            return Command::INVALID;
+        }
         $utilisateur = $this->utilisateurs->loadUserByIdentifier($identifiant);
 
         if (null !== $utilisateur) {

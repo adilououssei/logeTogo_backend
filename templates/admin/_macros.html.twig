@@ -49,6 +49,53 @@
     </form>
 {% endmacro %}
 
+{#
+    Menu « ⋮ » des actions d'une ligne de tableau. Les éléments sont préparés avec
+    element_action() / element_lien() dans un bloc {% set elements %}…{% endset %}.
+#}
+{% macro menu_actions(elements, libelle = 'Actions') %}
+    <div class="deroulant menu-actions">
+        <button class="bouton-icone bouton-icone--petit" type="button" data-deroulant aria-label="{{ libelle }}" title="{{ libelle }}"><i data-lucide="ellipsis-vertical"></i></button>
+        <div class="deroulant__panneau menu-actions__panneau">{{ elements }}</div>
+    </div>
+{% endmacro %}
+
+{# Élément du menu « ⋮ » qui envoie un formulaire POST protégé (avec confirmation facultative). #}
+{% macro element_action(url, texte, icone, confirmation = null, danger = false) %}
+    <form method="post" action="{{ url }}" {% if confirmation %}data-confirmer="{{ confirmation }}"{% endif %}>
+        <input type="hidden" name="_jeton" value="{{ csrf_token('admin') }}">
+        <button class="deroulant__element {{ danger ? 'deroulant__element--danger' }}" type="submit"><i data-lucide="{{ icone }}"></i>{{ texte }}</button>
+    </form>
+{% endmacro %}
+
+{% macro element_lien(url, texte, icone) %}
+    <a class="deroulant__element" href="{{ url }}"><i data-lucide="{{ icone }}"></i>{{ texte }}</a>
+{% endmacro %}
+
+{% macro separateur_menu() %}<div class="deroulant__separateur"></div>{% endmacro %}
+
+{#
+    Actions sur un compte (fiche, badge, suspension, suppression), pour les listes
+    d'utilisateurs et d'annonceurs. Rien pour son propre compte ni pour un administrateur.
+#}
+{% macro actions_compte(u) %}
+    {% set nom = u.prenom ~ ' ' ~ u.nom %}
+    {% set elements %}
+        {{ _self.element_lien(path('admin_utilisateur', {id: u.id}), 'Voir le profil', 'user-round') }}
+        {% if u.id != app.user.id and u.role.value != 'admin' %}
+            {{ _self.element_action(path('admin_utilisateur_badge', {id: u.id}), u.verifie ? 'Retirer le badge « vérifié »' : 'Accorder le badge « vérifié »', u.verifie ? 'badge-x' : 'badge-check', u.verifie ? 'Retirer le badge « vérifié » de ' ~ nom ~ ' ?' : 'Accorder le badge « vérifié » à ' ~ nom ~ ' sans pièce d\'identité ?') }}
+            {% if u.estActif %}
+                {{ _self.element_action(path('admin_utilisateur_etat', {id: u.id}), 'Suspendre le compte', 'ban', 'Suspendre le compte de ' ~ nom ~ ' ? Il ne pourra plus se connecter (le compte est conservé).') }}
+            {% else %}
+                {{ _self.element_action(path('admin_utilisateur_etat', {id: u.id}), 'Réactiver le compte', 'rotate-ccw') }}
+            {% endif %}
+            {{ _self.separateur_menu() }}
+            {{ _self.element_action(path('admin_utilisateur_supprimer', {id: u.id}), 'Supprimer le compte', 'trash-2', 'Supprimer DÉFINITIVEMENT le compte de ' ~ nom ~ ' ? Ses annonces, ses messages et ses photos seront effacés. Cette action est irréversible.', true) }}
+        {% endif %}
+    {% endset %}
+    {{ _self.menu_actions(elements, 'Actions sur le compte de ' ~ nom) }}
+{% endmacro %}
+
 {% macro pagination(page, pages, total, route, filtres) %}
     <div class="pagination">
         <span>{{ total }} résultat{{ total > 1 ? 's' }} · page {{ page }} sur {{ pages }}</span>

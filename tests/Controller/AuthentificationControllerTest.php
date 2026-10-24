@@ -5,6 +5,7 @@ namespace App\Tests\Controller;
 use App\Entity\Utilisateur;
 use App\Tests\OutilsApi;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * Parcours d'authentification tel que l'application mobile l'utilisera :
@@ -51,6 +52,20 @@ final class AuthentificationControllerTest extends WebTestCase
 
         $this->connecter('kofi@exemple.tg', 'mauvais');
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testAncienIdentifiantEnFormeDEmailResteUtilisable(): void
+    {
+        // Compte créé en ligne de commande avant la vérification du format (ex. « admin2@logetogo.tg »).
+        $ancien = $this->creerUtilisateur('ancien.compte');
+        $ancien->setIdentifiant('admin2@logetogo.tg')->setEmail(null);
+        $ancien->setMotDePasse(static::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($ancien, 'secret123'));
+        $this->em()->flush();
+
+        $connexion = $this->connecter('admin2@logetogo.tg', 'secret123');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('admin2@logetogo.tg', $connexion['utilisateur']['identifiant']);
     }
 
     public function testRenouvellementDonneUnNouveauJetonSansMotDePasse(): void

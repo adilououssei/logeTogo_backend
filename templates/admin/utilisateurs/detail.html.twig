@@ -20,6 +20,7 @@
             {% else %}
                 {{ m.action(path('admin_utilisateur_etat', {id: utilisateur.id}), 'Réactiver le compte', 'rotate-ccw', 'bouton--succes') }}
             {% endif %}
+            {{ m.action(path('admin_utilisateur_supprimer', {id: utilisateur.id}), 'Supprimer le compte', 'trash-2', 'bouton--contour bouton--texte-danger', 'Supprimer DÉFINITIVEMENT le compte de ' ~ utilisateur.nomComplet ~ ' ? Ses annonces, ses messages et ses photos seront effacés. Cette action est irréversible.') }}
         </div>
     {% endif %}
 </div>

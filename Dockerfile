@@ -1,5 +1,6 @@
-# Image de départ : PHP 8.4 en mode FPM, sur Alpine Linux (légère).
-FROM php:8.4-fpm-alpine AS php
+# Image de départ : PHP 8.4 en mode FPM, sur Alpine Linux (légère). Version exacte : les correctifs
+# de sécurité de PHP arrivent dans l'image en changeant ce numéro (8.4.27 : correctifs du 21/10/2026).
+FROM php:8.4.27-fpm-alpine AS php
 
 # Extensions PHP dont Symfony et LogeTogo ont besoin.
 # ffmpeg : convertit l'audio des téléphones (M4A) en WAV pour Whisper (annonce vocale).

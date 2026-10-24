@@ -158,6 +158,47 @@ final class AdminTest extends WebTestCase
         self::assertTrue($this->recharger($agent)->isVerifie());
     }
 
+    public function testSupprimerDefinitivementUnCompte(): void
+    {
+        $membre = $this->avecMotDePasse($this->creerUtilisateur('kofi.mensah'), 'secret123');
+        $annonce = $this->creerAnnonce($membre);
+        $idMembre = $membre->getId();
+        $idAnnonce = $annonce->getId();
+        $this->connecterAdmin();
+
+        // Le menu « ⋮ » de la liste propose la suppression, avec une confirmation.
+        $crawler = $this->client->request('GET', '/admin/utilisateurs');
+        self::assertCount(1, $crawler->filter('form[action="/admin/utilisateurs/'.$idMembre.'/supprimer"][data-confirmer]'));
+
+        $this->envoyer('/admin/utilisateurs', '/admin/utilisateurs/'.$idMembre.'/supprimer');
+        self::assertResponseRedirects();
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.message--succes', 'supprimé définitivement');
+
+        $this->em()->clear();
+        self::assertNull($this->em()->find(Utilisateur::class, $idMembre));
+        self::assertNull($this->em()->find(Annonce::class, $idAnnonce), 'ses annonces sont supprimées avec lui');
+        $this->requeteJson('POST', '/api/auth/connexion', ['identifiant' => 'kofi.mensah', 'motDePasse' => 'secret123']);
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testUnAdministrateurNePeutPasEtreSupprime(): void
+    {
+        $autreAdmin = $this->creerUtilisateur('autre.admin', RoleUtilisateur::ADMIN);
+        $membre = $this->creerUtilisateur('ama.koffi');
+        $moi = $this->connecterAdmin();
+
+        $crawler = $this->client->request('GET', '/admin/utilisateurs');
+        self::assertCount(1, $crawler->filter('form[action$="/supprimer"]'), 'suppression proposée pour le membre seulement');
+        self::assertCount(1, $crawler->filter('form[action="/admin/utilisateurs/'.$membre->getId().'/supprimer"]'));
+
+        foreach ([$autreAdmin, $moi] as $admin) {
+            $this->envoyer('/admin/utilisateurs', '/admin/utilisateurs/'.$admin->getId().'/supprimer');
+            $this->em()->clear();
+            self::assertNotNull($this->em()->find(Utilisateur::class, $admin->getId()));
+        }
+    }
+
     public function testAnnonceursSontLesMembresQuiOntPublie(): void
     {
         $this->creerAnnonce($this->creerUtilisateur('kofi.mensah'));

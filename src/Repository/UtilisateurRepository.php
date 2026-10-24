@@ -29,13 +29,15 @@ class UtilisateurRepository extends ServiceEntityRepository implements PasswordU
     /**
      * Utilisé par la sécurité (connexion, jeton JWT, mot de passe oublié) : l'utilisateur
      * saisit son identifiant (« kofi.mensah ») ou son email, aux majuscules et espaces près.
-     * Un identifiant ne contient jamais « @ » : les deux ne peuvent pas se confondre.
+     * Les identifiants générés ne contiennent jamais « @ » ; une saisie avec « @ » est d'abord
+     * cherchée comme email, puis comme identifiant (anciens comptes créés en ligne de commande).
      */
     public function loadUserByIdentifier(string $identifier): ?Utilisateur
     {
         $saisie = self::normaliserIdentifiant($identifier);
 
-        return $this->findOneBy(str_contains($saisie, '@') ? ['email' => $saisie] : ['identifiant' => $saisie]);
+        return (str_contains($saisie, '@') ? $this->findOneBy(['email' => $saisie]) : null)
+            ?? $this->findOneBy(['identifiant' => $saisie]);
     }
 
     /** Re-hache automatiquement le mot de passe quand l'algorithme évolue. */

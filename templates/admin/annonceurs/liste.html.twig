@@ -46,14 +46,7 @@
                     <td class="nombre">{{ a.vues|number_format(0, ',', ' ') }}</td>
                     <td>{% if u.verifie %}<span class="pastille pastille--vert"><i data-lucide="badge-check"></i>Vérifié</span>{% else %}<span class="pastille pastille--gris">Non vérifié</span>{% endif %}</td>
                     <td>{{ m.etat_compte(u) }}</td>
-                    <td><div class="en-ligne" style="justify-content:flex-end">
-                        {{ m.action(path('admin_utilisateur_badge', {id: u.id}), u.verifie ? 'Retirer le badge' : 'Vérifier', u.verifie ? 'badge-x' : 'badge-check', 'bouton--contour', u.verifie ? 'Retirer le badge « vérifié » de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ?' : 'Accorder le badge « vérifié » à ' ~ u.prenom ~ ' ' ~ u.nom ~ ' sans pièce d\'identité ?') }}
-                        {% if u.estActif %}
-                            {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Suspendre', 'ban', 'bouton--contour', 'Suspendre le compte de ' ~ u.prenom ~ ' ' ~ u.nom ~ ' ?') }}
-                        {% else %}
-                            {{ m.action(path('admin_utilisateur_etat', {id: u.id}), 'Réactiver', 'rotate-ccw', 'bouton--succes') }}
-                        {% endif %}
-                    </div></td>
+                    <td class="colonne-actions">{{ m.actions_compte(u) }}</td>
                 </tr>
             {% else %}
                 <tr><td colspan="9" class="vide"><i data-lucide="user-round"></i>Aucun annonceur ne correspond à ces critères.</td></tr>
