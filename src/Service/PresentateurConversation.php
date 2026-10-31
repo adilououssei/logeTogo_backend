@@ -30,10 +30,16 @@ class PresentateurConversation
 
         return [
             'id' => $conversation->getId(),
+            // Fiche du bien affichée en tête du chat : chacun sait de quel logement on parle.
             'annonce' => null === $annonce ? null : [
                 'id' => $annonce->getId(),
                 'titre' => $annonce->getTitre(),
                 'photo' => $photo,
+                'prix' => $annonce->getPrix(),
+                'typeTransaction' => $annonce->getTypeTransaction()?->value,
+                'quartier' => $annonce->getLocalisation()->getQuartier(),
+                'ville' => $annonce->getLocalisation()->getVille(),
+                'statut' => $annonce->getStatut()->value,
             ],
             'interlocuteur' => [
                 'id' => $interlocuteur->getId(),

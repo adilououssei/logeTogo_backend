@@ -51,7 +51,11 @@ class Notificateur
         $apercu = TypeMessage::IMAGE === $message->getType()
             ? '📷 Photo'.('' !== trim((string) $message->getContenu()) ? ' · '.$message->getContenu() : '')
             : (string) $message->getContenu();
-        $titre = 'Nouveau message de '.$expediteur->getNomComplet();
+        // Le bien concerné est cité : l'annonceur sait tout de suite de quel logement on lui parle.
+        $bien = $conversation->getAnnonce()?->getTitre();
+        $suffixeBien = null !== $bien ? ' · '.$bien : '';
+        // La colonne « titre » d'une notification est limitée à 150 caractères.
+        $titre = mb_strimwidth('Nouveau message de '.$expediteur->getNomComplet().$suffixeBien, 0, 150, '…');
 
         $nonLue = $this->notifications->trouverMessageNonLu($destinataire, $conversation);
         $notification = $nonLue
@@ -65,8 +69,8 @@ class Notificateur
         $this->em->persist($notification);
         $this->em->flush();
 
-        // Comme WhatsApp : le nom de l'expéditeur en titre, le message (ou « 📷 Photo ») en dessous.
-        $this->push->envoyer([$destinataire], $expediteur->getNomComplet(), $apercu, [
+        // Comme WhatsApp : le nom de l'expéditeur (et le bien) en titre, le message (ou « 📷 Photo ») en dessous.
+        $this->push->envoyer([$destinataire], $expediteur->getNomComplet().$suffixeBien, $apercu, [
             'type' => TypeNotification::MESSAGE->value,
             'idConversation' => $conversation->getId(),
         ], 'messages');

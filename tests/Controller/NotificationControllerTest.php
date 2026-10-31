@@ -39,7 +39,7 @@ final class NotificationControllerTest extends WebTestCase
         $notifications = $this->requeteJson('GET', '/api/notifications', jeton: $jetonAgent);
         self::assertCount(1, $notifications);
         self::assertSame('message', $notifications[0]['type']);
-        self::assertSame('Nouveau message de Ama Koffi', $notifications[0]['titre']);
+        self::assertSame('Nouveau message de Ama Koffi · Chambre meublée à Adidogomé', $notifications[0]['titre'], 'le bien concerné est cité');
         self::assertSame('Toujours libre ?', $notifications[0]['contenu']);
         self::assertSame($conversation['id'], $notifications[0]['idConversation']);
         self::assertSame(['total' => 1], $this->requeteJson('GET', '/api/notifications/non-lues', jeton: $jetonAgent));
@@ -48,8 +48,8 @@ final class NotificationControllerTest extends WebTestCase
         self::assertCount(2, ServeurExpoSimule::$envois);
         self::assertSame('ExponentPushToken[agent]', ServeurExpoSimule::$envois[1]['to']);
         self::assertSame(['type' => 'message', 'idConversation' => $conversation['id']], ServeurExpoSimule::$envois[1]['data']);
-        // Comme WhatsApp : le nom de l'expéditeur en titre, en bandeau prioritaire (canal « messages »).
-        self::assertSame(['Ama Koffi', 'Toujours libre ?', 'messages', 'high'], [
+        // Comme WhatsApp : le nom de l'expéditeur (et le bien) en titre, en bandeau prioritaire (canal « messages »).
+        self::assertSame(['Ama Koffi · Chambre meublée à Adidogomé', 'Toujours libre ?', 'messages', 'high'], [
             ServeurExpoSimule::$envois[1]['title'], ServeurExpoSimule::$envois[1]['body'],
             ServeurExpoSimule::$envois[1]['channelId'], ServeurExpoSimule::$envois[1]['priority'],
         ]);

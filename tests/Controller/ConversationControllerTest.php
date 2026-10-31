@@ -38,6 +38,11 @@ final class ConversationControllerTest extends WebTestCase
         self::assertSame('Kofi', $conversation['interlocuteur']['prenom']);
         self::assertSame('+228 91 11 11 11', $conversation['interlocuteur']['telephone'], 'numéro de l\'annonce');
         self::assertSame($annonce->getTitre(), $conversation['annonce']['titre']);
+        // Fiche du bien affichée en tête du chat (des deux côtés).
+        self::assertSame(
+            ['prix' => 25000, 'typeTransaction' => 'location', 'quartier' => 'Adidogomé', 'ville' => 'Lomé', 'statut' => 'disponible'],
+            array_intersect_key($conversation['annonce'], array_flip(['prix', 'typeTransaction', 'quartier', 'ville', 'statut'])),
+        );
         $url = '/api/conversations/'.$conversation['id'];
 
         $envoye = $this->requeteJson('POST', $url.'/messages', ['contenu' => '  Bonjour, la chambre est-elle libre ?  '], $jetonLocataire);
@@ -54,6 +59,7 @@ final class ConversationControllerTest extends WebTestCase
         self::assertNull($listeAgent[0]['interlocuteur']['telephone'], 'le numéro du locataire n\'est jamais communiqué');
         self::assertFalse($listeAgent[0]['interlocuteur']['estAnnonceur'], 'le demandeur n\'est pas l\'annonceur');
         self::assertFalse($listeAgent[0]['dernierMessage']['deMoi']);
+        self::assertSame($annonce->getId(), $listeAgent[0]['annonce']['id'], 'l\'agent voit de quel bien on lui parle');
 
         // … l'ouvre (il devient lu) et répond.
         $lus = $this->requeteJson('GET', $url.'/messages', jeton: $jetonAgent);
