@@ -24,6 +24,34 @@
     {{ m.indicateur('star', 'fond-bleu-clair', 'Avis publiés', activite.avis, 0, path('admin_rapports')) }}
 </div>
 
+<section class="carte marge-haut">
+    <div class="carte__entete">
+        <h2><i data-lucide="download"></i>Téléchargements de l'application</h2>
+        {% if telechargements.erreur is null %}
+        <form method="post" action="{{ path('admin_rapport_telechargements_actualiser') }}">
+            <input type="hidden" name="_jeton" value="{{ csrf_token('telechargements') }}">
+            <button class="bouton bouton--contour" type="submit"><i data-lucide="refresh-cw"></i>Actualiser</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="carte__corps">
+        {% if telechargements.erreur == 'non_configure' %}
+            <p><strong>Google Play</strong> : non configuré. Le nombre exact de téléchargements vient de l'export de la Play Console (voir docs/telechargements_play_store.md). <strong>App Store</strong> : bientôt.</p>
+        {% elseif telechargements.erreur %}
+            <p class="texte-gris">Google Play : lecture impossible ({{ telechargements.erreur }}).</p>
+        {% else %}
+            <dl class="liste-definitions" style="grid-template-columns: 1fr auto">
+                <dt>Google Play : téléchargements (total)</dt><dd><strong>{{ telechargements.total|number_format(0, ',', ' ') }}</strong></dd>
+                <dt>Google Play : appareils actifs</dt><dd>{{ telechargements.actifs is null ? '—' : telechargements.actifs|number_format(0, ',', ' ') }}</dd>
+                <dt>Membres inscrits sur LogeTogo</dt><dd>{{ indicateurs.membres.total|number_format(0, ',', ' ') }}</dd>
+            </dl>
+            <p class="texte-gris texte-petit">Données Google jusqu'au {{ telechargements.jusquau ?? '—' }} (décalage d'environ 2 jours). Par mois :
+                {% for mois, n in telechargements.mois %}{{ mois }} : {{ n }}{{ not loop.last ? ' · ' : '' }}{% endfor %}.
+                <strong>App Store</strong> : bientôt.</p>
+        {% endif %}
+    </div>
+</section>
+
 <div class="grille grille--deux">
     <section class="carte">
         <div class="carte__entete"><h2><i data-lucide="user-plus"></i>Nouveaux membres et annonceurs par mois</h2></div>
