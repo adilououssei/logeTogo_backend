@@ -89,6 +89,10 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, unique: true, nullable: true)]
     private ?string $googleId = null;
 
+    /** Compte Apple lié (« sub » du jeton Apple) : connexion par « Se connecter avec Apple ». */
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
+    private ?string $appleId = null;
+
     #[ORM\Column(length: 500, nullable: true)]
     #[Groups(['utilisateur:lecture', 'annonceur:public'])]
     private ?string $avatar = null;
@@ -292,6 +296,18 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function setGoogleId(?string $googleId): static
     {
         $this->googleId = $googleId;
+
+        return $this;
+    }
+
+    public function getAppleId(): ?string
+    {
+        return $this->appleId;
+    }
+
+    public function setAppleId(?string $appleId): static
+    {
+        $this->appleId = $appleId;
 
         return $this;
     }

@@ -25,10 +25,11 @@ class InscriptionUtilisateur
 
     /**
      * @param string|null $googleId compte Google lié (inscription par « Continuer avec Google »)
+     * @param string|null $appleId  compte Apple lié (inscription par « Se connecter avec Apple »)
      *
      * @throws ValidationFailedException si les données sont refusées (email déjà utilisé…)
      */
-    public function inscrire(InscriptionDto $donnees, ?string $googleId = null): Utilisateur
+    public function inscrire(InscriptionDto $donnees, ?string $googleId = null, ?string $appleId = null): Utilisateur
     {
         $utilisateur = (new Utilisateur())
             ->setPrenom(trim($donnees->prenom))
@@ -39,7 +40,8 @@ class InscriptionUtilisateur
             ->setTelephone(null !== $donnees->telephone ? trim($donnees->telephone) : null)
             ->setWhatsapp(null !== $donnees->whatsapp ? trim($donnees->whatsapp) : null)
             ->setIndicatifPays($donnees->telephone || $donnees->whatsapp ? $donnees->indicatifPays : null)
-            ->setGoogleId($googleId);
+            ->setGoogleId($googleId)
+            ->setAppleId($appleId);
         $utilisateur->setMotDePasse($this->hacheur->hashPassword($utilisateur, $donnees->motDePasse));
 
         // Deux inscriptions simultanées de « Kofi Mensah » ne doivent pas obtenir le même identifiant.

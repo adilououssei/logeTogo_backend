@@ -2,13 +2,16 @@
 
 namespace App\Controller;
 
+use App\Dto\ConnexionAppleDto;
 use App\Dto\ConnexionGoogleDto;
 use App\Dto\DemandeCodeDto;
 use App\Dto\InscriptionDto;
 use App\Dto\ReinitialisationMotDePasseDto;
 use App\Dto\VerificationCodeDto;
 use App\Entity\Utilisateur;
+use App\Service\ConnexionApple;
 use App\Service\ConnexionGoogle;
+use App\Service\IdentiteApple;
 use App\Service\IdentiteGoogle;
 use App\Service\InscriptionUtilisateur;
 use App\Service\ReinitialisationMotDePasse;
@@ -68,6 +71,31 @@ class AuthentificationController extends AbstractController
                 'inscriptionRequise' => true,
                 'prenom' => $resultat->prenom,
                 'nom' => $resultat->nom,
+                'email' => $resultat->email,
+            ]);
+        }
+
+        return $connexionReussie->handleAuthenticationSuccess($resultat);
+    }
+
+    /**
+     * « Se connecter avec Apple » : {"jeton": "<identityToken Apple>"}. Même réponse que /google ;
+     * pour un nouveau compte, l'application renvoie aussi le nom (Apple ne le met pas dans le jeton).
+     */
+    #[Route('/apple', name: 'apple', methods: ['POST'])]
+    public function apple(
+        #[MapRequestPayload(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)] ConnexionAppleDto $donnees,
+        ConnexionApple $connexionApple,
+        #[Autowire(service: 'lexik_jwt_authentication.handler.authentication_success')]
+        AuthenticationSuccessHandler $connexionReussie,
+    ): Response {
+        $resultat = $connexionApple->connecter($donnees);
+
+        if ($resultat instanceof IdentiteApple) {
+            return $this->json([
+                'inscriptionRequise' => true,
+                'prenom' => null,
+                'nom' => null,
                 'email' => $resultat->email,
             ]);
         }

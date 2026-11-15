@@ -2,6 +2,7 @@
 
 namespace App\Tests;
 
+use App\Service\VerificateurJetonApple;
 use App\Service\VerificateurJetonGoogle;
 use Lcobucci\JWT\Encoding\ChainedFormatter;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -63,6 +64,46 @@ final class ServeurExpoSimule
         return $jeton->getToken(new Sha256(), InMemory::file($chemin))->toString();
     }
 
+    /**
+     * Jeton d'identité « Apple » signé par la clé de test (la même que pour Google), dont la clé
+     * publique est servie à la place de celles d'Apple. Apple ne met pas le nom dans le jeton.
+     *
+     * @param array<string, mixed> $revendications
+     */
+    public static function jetonApple(array $revendications = [], string $cle = 'cle-privee.pem'): string
+    {
+        $r = $revendications + [
+            'iss' => 'https://appleid.apple.com', 'aud' => 'com.exemple.test',
+            'sub' => '000123.abcdef.4567', 'email' => 'ama.koffi@gmail.com', 'email_verified' => 'true',
+            'exp' => new \DateTimeImmutable('+1 hour'),
+        ];
+        $jeton = (new Builder(new JoseEncoder(), ChainedFormatter::default()))
+            ->withHeader('kid', self::KID_GOOGLE)
+            ->issuedBy($r['iss'])
+            ->permittedFor($r['aud'])
+            ->relatedTo($r['sub'])
+            ->issuedAt(new \DateTimeImmutable('-1 minute'))
+            ->expiresAt($r['exp'])
+            ->withClaim('email', $r['email'])
+            ->withClaim('email_verified', $r['email_verified']);
+
+        $chemin = str_contains($cle, '/') ? $cle : self::DOSSIER_GOOGLE.'/'.$cle;
+
+        return $jeton->getToken(new Sha256(), InMemory::file($chemin))->toString();
+    }
+
+    /** Clés publiques d'Apple (format JWK) : celle de test, issue du certificat de test. */
+    private static function clesApple(): string
+    {
+        $details = openssl_pkey_get_details(openssl_pkey_get_public(file_get_contents(self::DOSSIER_GOOGLE.'/certificat.pem')));
+        $base64url = static fn (string $octets): string => rtrim(strtr(base64_encode($octets), '+/', '-_'), '=');
+
+        return json_encode(['keys' => [[
+            'kty' => 'RSA', 'kid' => self::KID_GOOGLE, 'use' => 'sig', 'alg' => 'RS256',
+            'n' => $base64url($details['rsa']['n']), 'e' => $base64url($details['rsa']['e']),
+        ]]]);
+    }
+
     public static function vider(): void
     {
         self::$envois = [];
@@ -86,6 +127,10 @@ final class ServeurExpoSimule
         }
         if (VerificateurJetonGoogle::URL_CERTIFICATS === $url) {
             return new MockResponse(json_encode([self::KID_GOOGLE => file_get_contents(self::DOSSIER_GOOGLE.'/certificat.pem')]));
+        }
+
+        if (VerificateurJetonApple::URL_CLES === $url) {
+            return new MockResponse(self::clesApple());
         }
 
         $messages = json_decode($options['body'] ?? '[]', true) ?? [];
